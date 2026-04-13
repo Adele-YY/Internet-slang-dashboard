@@ -203,9 +203,7 @@ if not f_df.empty:
         barmode="group",
         height=500,
         color_discrete_map={"Awareness": "#636EFA", "Usage": "#EF553B"},
-        labels={"Score": "Average Score", "Type": "Metric"},
-        color_discrete_map={"Awareness": "#78909c", "Usage": "#b0bec5"},
-        template="plotly_white" # 强制使用白色背景，看起来更清爽
+        labels={"Score": "Average Score", "Type": "Metric"}
     )
     
     fig_bar_comp.update_layout(xaxis_tickangle=-45) # 倾斜字体防止重叠
