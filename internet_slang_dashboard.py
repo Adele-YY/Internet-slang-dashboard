@@ -115,9 +115,16 @@ def process_multi_choice(series, translation_map):
     all_items = []
     for val in series.dropna():
         items = str(val).split('┋')
-        all_items.extend([translation_map.get(i.strip(), i.strip()) for i in items])
-    return pd.Series(all_items).value_counts().reset_index(name='Count')
-
+        for i in items:
+            name = i.strip()
+            # 如果在 map 里就翻译，不在或者原本是“其他”就归为 Others
+            translated = translation_map.get(name, 'Others')
+            all_items.append(translated)
+    
+    counts = pd.Series(all_items).value_counts().reset_index()
+    counts.columns = ['Item', 'Count']
+    return counts
+    
 # 定义翻译字典 (放在主程序全局位置)
 CHANNEL_MAP = {
     '短视频平台': 'Short Video Platforms',
@@ -278,34 +285,37 @@ with col_chan:
     st.markdown("#### Top Acquisition Channels")
     if not f_df.empty:
         chan_data = process_multi_choice(f_df['Acquisition Channel'], CHANNEL_MAP)
-        chan_data.columns = ['Channel', 'Count']
         
+        # 主图表：过滤掉 Others，让重点更清晰
+        main_chan = chan_data[chan_data['Item'] != 'Others']
         fig_chan = px.bar(
-            chan_data.sort_values('Count', ascending=True), 
-            x='Count', y='Channel', orientation='h',
-            color='Channel',
-            color_discrete_sequence=px.colors.qualitative.Pastel, # 低饱和度色包
-            template='plotly_white',
-            height=400
+            main_chan.sort_values('Count', ascending=True), 
+            x='Count', y='Item', orientation='h',
+            color='Item', color_discrete_sequence=px.colors.qualitative.Pastel,
+            template='plotly_white', height=350
         )
-        fig_chan.update_layout(showlegend=False, margin=dict(l=0, r=20, t=20, b=0))
+        fig_chan.update_layout(showlegend=False, margin=dict(l=0, r=20, t=20, b=0), yaxis_title=None)
         st.plotly_chart(fig_chan, use_container_width=True)
+        
+        # 把 Others 藏在这里
+        others_count = chan_data[chan_data['Item'] == 'Others']['Count'].sum()
+        with st.expander(f"See Details of 'Others' ({others_count} mentions)"):
+            st.write("These include less frequent sources and custom responses from the survey.")
 
 with col_scene:
     st.markdown("#### Usage Scenarios")
     if not f_df.empty:
         scene_data = process_multi_choice(f_df['Using Scene'], SCENE_MAP)
-        scene_data.columns = ['Scene', 'Count']
         
-        # 使用环形图展示场景分布，配有图例
         fig_scene = px.pie(
-            scene_data, values='Count', names='Scene',
-            hole=0.5,
-            color_discrete_sequence=px.colors.qualitative.Safe,
-            template='plotly_white',
-            height=400
+            scene_data, values='Count', names='Item',
+            hole=0.5, color_discrete_sequence=px.colors.qualitative.Safe,
+            template='plotly_white', height=350
         )
         fig_scene.update_layout(margin=dict(l=0, r=0, t=20, b=0), legend=dict(orientation="v", y=0.5))
         st.plotly_chart(fig_scene, use_container_width=True)
+        
+        with st.expander("Usage Insights"):
+            st.info("The data shows a strong preference for informal digital environments.")
 
 st.markdown("💡 **Insight:** Most users acquire slang via **Short Video Platforms**, while usage is predominantly concentrated in **Online Private Chats**.")
