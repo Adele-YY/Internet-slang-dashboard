@@ -173,6 +173,45 @@ if not f_df.empty:
     fig_comp.update_traces(textposition='top center')
     st.plotly_chart(fig_comp, use_container_width=True)
 
+# 3.2 柱状对比：不同热梗的 Awareness vs Usage
+st.divider()
+st.subheader("📊 Comparative Analysis: Awareness vs. Usage by Slang")
+
+if not f_df.empty:
+    # 构造对比数据
+    bar_data_list = []
+    for i in range(len(SLANG_CONTENT)):
+        bar_data_list.append({
+            "Slang": SLANG_CONTENT[i],
+            "Score": f_df[f"Score_Aw_{i}"].mean(),
+            "Type": "Awareness"
+        })
+        bar_data_list.append({
+            "Slang": SLANG_CONTENT[i],
+            "Score": f_df[f"Score_Us_{i}"].mean(),
+            "Type": "Usage"
+        })
+    
+    bar_df = pd.DataFrame(bar_data_list)
+    
+    # 绘制并列柱状图
+    fig_bar_comp = px.bar(
+        bar_df, 
+        x="Slang", 
+        y="Score", 
+        color="Type", 
+        barmode="group",
+        height=500,
+        color_discrete_map={"Awareness": "#636EFA", "Usage": "#EF553B"},
+        labels={"Score": "Average Score", "Type": "Metric"}
+    )
+    
+    fig_bar_comp.update_layout(xaxis_tickangle=-45) # 倾斜字体防止重叠
+    st.plotly_chart(fig_bar_comp, use_container_width=True)
+    
+    # 补充：计算转化率 (知晓后真正使用的比例)
+    st.markdown("💡 **Insight:** 从上方图表可以看出，哪些梗是“大家都听过但没人用” (高知晓、低使用)，哪些是“受众精准且高频”的。")
+    
 # 4. 单项深入分析
 st.divider()
 st.subheader("🔎 Individual Slang Item Analysis")
