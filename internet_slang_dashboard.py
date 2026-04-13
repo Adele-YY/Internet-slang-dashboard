@@ -175,7 +175,7 @@ if not f_df.empty:
 
 # 3.2 柱状对比：不同热梗的 Awareness vs Usage
 st.divider()
-st.subheader("📊 Comparative Analysis: Awareness vs. Usage by Slang")
+st.subheader("📊 Comparative Analysis: Awareness & Usage by Slang")
 
 if not f_df.empty:
     # 构造对比数据
@@ -210,7 +210,7 @@ if not f_df.empty:
     st.plotly_chart(fig_bar_comp, use_container_width=True)
     
     # 补充：计算转化率 (知晓后真正使用的比例)
-    st.markdown("💡 **Insight:** 从上方图表可以看出，哪些梗是“大家都听过但没人用” (高知晓、低使用)，哪些是“受众精准且高频”的。")
+    st.markdown("💡 **Insight:** From the chart above, we can see the awareness and usage levels of different slangs.")
     
 # 4. 单项深入分析
 st.divider()
