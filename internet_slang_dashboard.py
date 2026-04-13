@@ -15,8 +15,7 @@ GEO_MAP = {
     '重庆': [29.5630, 106.5516], '浙江': [30.2741, 120.1551], '上海': [31.2304, 121.4737],
     '山东': [36.6512, 117.0483], '山西': [37.8706, 112.5489], '黑龙江': [45.7569, 126.6424],
     '湖北': [30.5928, 114.3055], '安徽': [31.8612, 117.2830], '辽宁': [41.8057, 123.4315],
-    '广西': [22.8170, 108.3200], '江苏': [32.0603, 118.7969], '天津': [39.0841, 117.2008],
-    '国外': [20.0, 0.0]
+    '广西': [22.8170, 108.3200], '江苏': [32.0603, 118.7969], '天津': [39.0841, 117.2008]
 }
 
 # Slang Content Mapping
@@ -201,6 +200,8 @@ if not map_data.empty:
     fig_map = px.scatter_mapbox(map_data, lat="lat", lon="lon", color="Gender", hover_name="Location Name",
                                 zoom=3, height=450, mapbox_style="open-street-map")
     st.plotly_chart(fig_map, use_container_width=True)
+
+st.markdown("💡 **Note:** Locations are approximated based on IP data and do not represent precise physical addresses.")
 
 # 4. Slang Comparative Analysis
 st.divider()
