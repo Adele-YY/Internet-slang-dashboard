@@ -201,7 +201,7 @@ if not map_data.empty:
                                 zoom=3, height=450, mapbox_style="open-street-map")
     st.plotly_chart(fig_map, use_container_width=True)
 
-st.markdown("💡 **Note:** Locations are approximated based on IP data and do not represent precise physical addresses.")
+st.markdown("⚠️ **Note:** Locations are approximated based on IP data and do not represent precise physical addresses.")
 
 # 4. Slang Comparative Analysis
 st.divider()
