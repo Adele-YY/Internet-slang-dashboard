@@ -35,6 +35,16 @@ def load_and_fully_clean_data(file_path):
     df.columns = df.columns.str.strip()
     df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
 
+    # 1. 修正列名映射逻辑 (关键修复点：移出了子函数内部)
+    temp_cols = list(df.columns)
+    for i in range(7):
+        # 根据你的 CSV 结构，热梗分数列通常从第 11 列开始
+        if len(temp_cols) > 11 + i:
+            temp_cols[11 + i] = f"Score_Aw_{i}"
+        if len(temp_cols) > 19 + i:
+            temp_cols[19 + i] = f"Score_Us_{i}"
+    df.columns = temp_cols
+
     rename_dict = {
         '序号': 'Order', '来自IP': 'IP', '1、您的性别': 'Gender',
         '2、您的年龄段': 'Age', '3、您的常住地': 'Residence',
@@ -44,70 +54,27 @@ def load_and_fully_clean_data(file_path):
         '9、您通常在哪些场景下会使用网络热梗': 'Using Scene',
         '10、您认为网络热梗对您的日常交流有何影响': 'Influence'
     }
+    df.rename(columns=rename_dict, inplace=True)
 
-    # 定义翻译字典
-    CHANNEL_MAP = {
-        '短视频平台': 'Short Video Platforms',
-        '社交软件': 'Social Apps (WeChat/QQ)',
-        '新闻资讯': 'News & Media',
-        '日常交流': 'Daily Conversations',
-        '综艺节目': 'Variety Shows',
-        '影视作品': 'Movies & TV',
-        '其他': 'Others'
-    }
-
-    SCENE_MAP = {
-        '线下闲聊': 'Offline Chatting',
-        '线上私聊（微信、QQ等）': 'Online Private Chat',
-        '社交媒体互动（发帖、评论、转发等）': 'Social Media Interaction',
-        '工作/学习正式场合': 'Formal Work/Study',
-        '游戏语音/文字': 'Gaming Chat',
-        '其他': 'Others'
-    }
-    
-    def process_multi_choice(series, translation_map):
-        """处理多选题：拆分、翻译并统计"""
-        all_items = []
-        for val in series.dropna():
-            items = str(val).split('┋')
-            all_items.extend([translation_map.get(i.strip(), i.strip()) for i in items])
-        return pd.Series(all_items).value_counts().reset_index(name='Count')
-    
-        temp_cols = list(df.columns)
-        for i in range(7):
-            if len(temp_cols) > 11 + i:
-                temp_cols[11 + i] = f"Score_Aw_{i}"
-            if len(temp_cols) > 19 + i:
-                temp_cols[19 + i] = f"Score_Us_{i}"
-        df.columns = temp_cols
-        df.rename(columns=rename_dict, inplace=True)
-
-    # Gender Cleaning
+    # 2. Gender Cleaning
     if 'Gender' in df.columns:
         df['Gender'] = df['Gender'].replace({'女': 'Female', '男': 'Male'})
     
-    # Age Cleaning
+    # 3. Age Cleaning
     if 'Age' in df.columns:
-        df['Age'] = df['Age'].replace(
-            {'18岁以下': 'Under 18', '18～30岁': '18-30', '30岁以上': 'Over 30'})
-        df['Age'] = pd.Categorical(df['Age'], categories=[
-                                   'Under 18', '18-30', 'Over 30'], ordered=True)
+        df['Age'] = df['Age'].replace({'18岁以下': 'Under 18', '18～30岁': '18-30', '30岁以上': 'Over 30'})
+        df['Age'] = pd.Categorical(df['Age'], categories=['Under 18', '18-30', 'Over 30'], ordered=True)
     
-    # Frequency Cleaning (FIXED SYNTAX ERROR HERE)
+    # 4. Frequency Cleaning
     if 'Frequency' in df.columns:
         freq_map = {'经常': 'Frequently', '有时': 'Sometimes', '几乎不': 'Almost Never'}
         df['Frequency'] = df['Frequency'].replace(freq_map)
-        df['Frequency'] = pd.Categorical(
-            df['Frequency'], 
-            categories=['Almost Never', 'Sometimes', 'Frequently'], 
-            ordered=True
-        )
+        df['Frequency'] = pd.Categorical(df['Frequency'], categories=['Almost Never', 'Sometimes', 'Frequently'], ordered=True)
     
     if 'UM Student' in df.columns:
-        df['UM Student'] = df['UM Student'].replace(
-            {'是': 'UM Student', '否': 'Non-UM Student'})
+        df['UM Student'] = df['UM Student'].replace({'是': 'UM Student', '否': 'Non-UM Student'})
 
-    # Scoring Conversion
+    # 5. Scoring Conversion
     cleanup_map = {'经常刷/听到': 2, '有印象': 1, '没听过': 0, '经常会用': 2, '有时会用': 1, '从来不用': 0}
 
     def safe_convert(series):
@@ -124,7 +91,7 @@ def load_and_fully_clean_data(file_path):
     df['Using Score'] = df[u_cols].sum(axis=1)
     df['Total Score'] = df['Hearing Score'] + df['Using Score']
 
-    # Location Extraction
+    # 6. Location Extraction
     def extract_loc(val):
         match = re.search(r'\((.*?)\)', str(val))
         return match.group(1).split('-')[0] if match else "Unknown"
@@ -142,6 +109,34 @@ def load_and_fully_clean_data(file_path):
     df['lon'] = [c[1] for c in coords]
 
     return df
+
+# 注意：process_multi_choice 建议定义在 load_and_fully_clean_data 之外，方便后续调用
+def process_multi_choice(series, translation_map):
+    all_items = []
+    for val in series.dropna():
+        items = str(val).split('┋')
+        all_items.extend([translation_map.get(i.strip(), i.strip()) for i in items])
+    return pd.Series(all_items).value_counts().reset_index(name='Count')
+
+# 定义翻译字典 (放在主程序全局位置)
+CHANNEL_MAP = {
+    '短视频平台': 'Short Video Platforms',
+    '社交软件': 'Social Apps',
+    '新闻资讯': 'News & Media',
+    '日常交流': 'Daily Conversations',
+    '综艺节目': 'Variety Shows',
+    '影视作品': 'Movies & TV',
+    '其他': 'Others'
+}
+
+SCENE_MAP = {
+    '线下闲聊': 'Offline Chatting',
+    '线上私聊（微信、QQ等）': 'Online Private Chat',
+    '社交媒体互动（发帖、评论、转发等）': 'Social Media Interaction',
+    '工作/学习正式场合': 'Formal Work/Study',
+    '游戏语音/文字': 'Gaming Chat',
+    '其他': 'Others'
+}
 
 # --- Data Loading ---
 try:
