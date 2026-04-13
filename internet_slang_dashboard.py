@@ -61,6 +61,10 @@ def load_and_fully_clean_data(file_path):
     if 'UM Student' in df.columns:
         df['UM Student'] = df['UM Student'].replace({'是': 'UM Student', '否': 'Non-UM Student'})
 
+    # 频率排序逻辑
+    freq_order = ['基本不刷', '偶尔刷刷', '经常刷', '几乎整天都在刷']
+    df['Frequency'] = pd.Categorical(df['Frequency'], categories=freq_order, ordered=True)
+    
     cleanup_map = {'经常刷/听到': 2, '有印象': 1, '没听过': 0, '经常会用': 2, '有时会用': 1, '从来不用': 0}
     
     def safe_convert(series):
@@ -129,23 +133,33 @@ with kpi_col:
     m3.metric("Avg Total Score", round(f_df['Total Score'].mean(), 2) if not f_df.empty else 0)
     m4.metric("Samples Count", len(f_df))
 
-with pie_col1:
-    if not f_df.empty:
-        gender_counts = f_df['Gender'].value_counts().reset_index()
-        gender_counts.columns = ['Gender', 'Count']
-        fig_gen = px.pie(gender_counts, values='Count', names='Gender', hole=0.5, 
-                         title="Gender Ratio", color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig_gen.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
-        st.plotly_chart(fig_gen, use_container_width=True)
+# 1. 顶部指标与分布 (新增频率甜甜圈图)
+st.divider()
+kpi_col, p1, p2, p3 = st.columns([1.5, 1, 1, 1])
 
-with pie_col2:
-    if not f_df.empty and 'UM Student' in f_df.columns:
-        um_counts = f_df['UM Student'].value_counts().reset_index()
-        um_counts.columns = ['Status', 'Count']
-        fig_um = px.pie(um_counts, values='Count', names='Status', hole=0.5, 
-                        title="Student Status", color_discrete_sequence=px.colors.qualitative.Set3)
-        fig_um.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
-        st.plotly_chart(fig_um, use_container_width=True)
+with kpi_col:
+    st.markdown("#### 📈 Key Metrics")
+    st.metric("Avg Total Score", f"{f_df['Total Score'].mean():.2f}")
+    st.metric("Samples Count", len(f_df))
+
+with p1:
+    g_counts = f_df['Gender'].value_counts().reset_index()
+    fig_g = px.pie(g_counts, values='count', names='Gender', hole=0.6, title="Gender", color_discrete_sequence=PALETTE_GENDER)
+    fig_g.update_layout(height=200, margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
+    st.plotly_chart(fig_g, use_container_width=True)
+
+with p2:
+    u_counts = f_df['UM Student'].value_counts().reset_index()
+    fig_u = px.pie(u_counts, values='count', names='UM Student', hole=0.6, title="UM Status", color_discrete_sequence=PALETTE_UM)
+    fig_u.update_layout(height=200, margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
+    st.plotly_chart(fig_u, use_container_width=True)
+
+with p3:
+    # 新增：频率甜甜圈
+    fr_counts = f_df['Frequency'].value_counts().reset_index()
+    fig_fr = px.pie(fr_counts, values='count', names='Frequency', hole=0.6, title="Video Frequency", color_discrete_sequence=PALETTE_FREQ)
+    fig_fr.update_layout(height=200, margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
+    st.plotly_chart(fig_fr, use_container_width=True)
 
 # 2. 地理分布
 st.subheader("📍 Geographic Distribution")
