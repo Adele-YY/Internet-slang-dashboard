@@ -67,11 +67,11 @@ def load_and_fully_clean_data(file_path):
     
     # Frequency Cleaning (FIXED SYNTAX ERROR HERE)
     if 'Frequency' in df.columns:
-        freq_map = {'经常': 'Frequently', '有时': 'Sometimes', '很少': 'Rarely', '几乎不': 'Almost Never'}
+        freq_map = {'经常': 'Frequently', '有时': 'Sometimes', '几乎不': 'Almost Never'}
         df['Frequency'] = df['Frequency'].replace(freq_map)
         df['Frequency'] = pd.Categorical(
             df['Frequency'], 
-            categories=['Almost Never', 'Rarely', 'Sometimes', 'Frequently'], 
+            categories=['Almost Never', 'Sometimes', 'Frequently'], 
             ordered=True
         )
     
@@ -229,7 +229,7 @@ if not f_df.empty:
         bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": f_df[f"Score_Us_{i}"].mean(), "Type": "Usage"})
 
     fig_bar_comp = px.bar(pd.DataFrame(bar_data_list), x="Slang", y="Score", color="Type",
-                          barmode="group", height=500, color_discrete_map={"Awareness": "#00CC96", "Usage": "#AB63FA"}, template='plotly_white')
+                          barmode="group", height=500, color_discrete_map={"Awareness": "#8ECAE6", "Usage": "#BDB2FF"}, template='plotly_white')
     fig_bar_comp.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_bar_comp, use_container_width=True)
 
