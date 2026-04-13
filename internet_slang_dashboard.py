@@ -159,7 +159,7 @@ if not map_data.empty:
 
 # 3. 散点对比
 st.divider()
-st.subheader("📊 Slang Landscape: Awareness vs. Usage")
+st.subheader("📊 Slang Landscape: Awareness & Usage")
 if not f_df.empty:
     comp_list = []
     for i in range(len(SLANG_CONTENT)):
