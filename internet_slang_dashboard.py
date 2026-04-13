@@ -45,14 +45,42 @@ def load_and_fully_clean_data(file_path):
         '10、您认为网络热梗对您的日常交流有何影响': 'Influence'
     }
 
-    temp_cols = list(df.columns)
-    for i in range(7):
-        if len(temp_cols) > 11 + i:
-            temp_cols[11 + i] = f"Score_Aw_{i}"
-        if len(temp_cols) > 19 + i:
-            temp_cols[19 + i] = f"Score_Us_{i}"
-    df.columns = temp_cols
-    df.rename(columns=rename_dict, inplace=True)
+    # 定义翻译字典
+    CHANNEL_MAP = {
+        '短视频平台': 'Short Video Platforms',
+        '社交软件': 'Social Apps (WeChat/QQ)',
+        '新闻资讯': 'News & Media',
+        '日常交流': 'Daily Conversations',
+        '综艺节目': 'Variety Shows',
+        '影视作品': 'Movies & TV',
+        '其他': 'Others'
+    }
+
+    SCENE_MAP = {
+        '线下闲聊': 'Offline Chatting',
+        '线上私聊（微信、QQ等）': 'Online Private Chat',
+        '社交媒体互动（发帖、评论、转发等）': 'Social Media Interaction',
+        '工作/学习正式场合': 'Formal Work/Study',
+        '游戏语音/文字': 'Gaming Chat',
+        '其他': 'Others'
+    }
+    
+    def process_multi_choice(series, translation_map):
+        """处理多选题：拆分、翻译并统计"""
+        all_items = []
+        for val in series.dropna():
+            items = str(val).split('┋')
+            all_items.extend([translation_map.get(i.strip(), i.strip()) for i in items])
+        return pd.Series(all_items).value_counts().reset_index(name='Count')
+    
+        temp_cols = list(df.columns)
+        for i in range(7):
+            if len(temp_cols) > 11 + i:
+                temp_cols[11 + i] = f"Score_Aw_{i}"
+            if len(temp_cols) > 19 + i:
+                temp_cols[19 + i] = f"Score_Us_{i}"
+        df.columns = temp_cols
+        df.rename(columns=rename_dict, inplace=True)
 
     # Gender Cleaning
     if 'Gender' in df.columns:
@@ -243,3 +271,45 @@ if not f_df.empty:
     fig_ind = px.bar(item_avg, x='Gender', y=['Awareness', 'Usage'], barmode='group',
                      title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}")
     st.plotly_chart(fig_ind, use_container_width=True)
+
+# 7. Other Info
+st.divider()
+st.subheader("📡 Acquisition Channels & Usage Scenarios")
+
+col_chan, col_scene = st.columns(2)
+
+with col_chan:
+    st.markdown("#### Top Acquisition Channels")
+    if not f_df.empty:
+        chan_data = process_multi_choice(f_df['Acquisition Channel'], CHANNEL_MAP)
+        chan_data.columns = ['Channel', 'Count']
+        
+        fig_chan = px.bar(
+            chan_data.sort_values('Count', ascending=True), 
+            x='Count', y='Channel', orientation='h',
+            color='Channel',
+            color_discrete_sequence=px.colors.qualitative.Pastel, # 低饱和度色包
+            template='plotly_white',
+            height=400
+        )
+        fig_chan.update_layout(showlegend=False, margin=dict(l=0, r=20, t=20, b=0))
+        st.plotly_chart(fig_chan, use_container_width=True)
+
+with col_scene:
+    st.markdown("#### Usage Scenarios")
+    if not f_df.empty:
+        scene_data = process_multi_choice(f_df['Using Scene'], SCENE_MAP)
+        scene_data.columns = ['Scene', 'Count']
+        
+        # 使用环形图展示场景分布，配有图例
+        fig_scene = px.pie(
+            scene_data, values='Count', names='Scene',
+            hole=0.5,
+            color_discrete_sequence=px.colors.qualitative.Safe,
+            template='plotly_white',
+            height=400
+        )
+        fig_scene.update_layout(margin=dict(l=0, r=0, t=20, b=0), legend=dict(orientation="v", y=0.5))
+        st.plotly_chart(fig_scene, use_container_width=True)
+
+st.markdown("💡 **Insight:** Most users acquire slang via **Short Video Platforms**, while usage is predominantly concentrated in **Online Private Chats**.")
