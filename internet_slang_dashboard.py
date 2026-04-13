@@ -63,6 +63,22 @@ def load_and_fully_clean_data(file_path):
             {'18岁以下': 'Under 18', '18～30岁': '18-30', '30岁以上': 'Over 30'})
         df['Age'] = pd.Categorical(df['Age'], categories=[
                                    'Under 18', '18-30', 'Over 30'], ordered=True)
+    f 'Frequency' in df.columns:
+    # Standardizing the Frequency labels to English
+    freq_map = {
+        '经常': 'Frequently',
+        '有时': 'Sometimes',
+        '很少': 'Rarely',
+        '从不': 'Never'
+    }
+    df['Frequency'] = df['Frequency'].replace(freq_map)
+    # Defining the logical order for the chart axis
+    df['Frequency'] = pd.Categorical(
+        df['Frequency'], 
+        categories=['Never', 'Rarely', 'Sometimes', 'Frequently'], 
+        ordered=True
+    )
+    
     if 'UM Student' in df.columns:
         df['UM Student'] = df['UM Student'].replace(
             {'是': 'UM Student', '否': 'Non-UM Student'})
@@ -162,6 +178,59 @@ with pie_col2:
         fig_um.update_layout(height=250, margin=dict(
             t=40, b=0, l=0, r=0), showlegend=False)
         st.plotly_chart(fig_um, use_container_width=True)
+
+st.divider()
+st.subheader("📱 Short Video Usage & Slang Proficiency")
+
+col_freq1, col_freq2 = st.columns(2)
+
+with col_freq1:
+    # 1. Distribution of Short Video Frequency
+    st.markdown("#### Distribution of Usage Frequency")
+    if not f_df.empty:
+        freq_counts = f_df['Frequency'].value_counts().reset_index()
+        freq_counts.columns = ['Frequency', 'Count']
+        # Sort by the categorical order defined above
+        freq_counts['Frequency'] = pd.Categorical(
+            freq_counts['Frequency'], 
+            categories=['Never', 'Rarely', 'Sometimes', 'Frequently'], 
+            ordered=True
+        )
+        freq_counts = freq_counts.sort_values('Frequency')
+        
+        fig_freq_dist = px.bar(
+            freq_counts, 
+            x='Frequency', 
+            y='Count',
+            color='Frequency',
+            color_discrete_sequence=px.colors.sequential.Viridis,
+            text='Count'
+        )
+        st.plotly_chart(fig_freq_dist, use_container_width=True)
+
+with col_freq2:
+    # 2. Relationship between Frequency and Total Score
+    st.markdown("#### Average Total Score by Frequency")
+    if not f_df.empty:
+        # Calculate mean scores per frequency group
+        freq_score = f_df.groupby('Frequency', observed=True)['Total Score'].mean().reset_index()
+        
+        fig_freq_trend = px.line(
+            freq_score, 
+            x='Frequency', 
+            y='Total Score',
+            markers=True,
+            title="Trend: Usage Frequency vs. Slang Proficiency",
+            labels={'Total Score': 'Avg Total Score'}
+        )
+        # Add a fill area to make the trend more visible
+        fig_freq_trend.update_traces(line_color='#636EFA', fill='tozeroy') 
+        st.plotly_chart(fig_freq_trend, use_container_width=True)
+
+st.markdown("""
+💡 **Insight:** This analysis demonstrates the correlation between digital consumption habits and internet slang mastery. 
+Users who watch short videos **Frequently** generally exhibit higher awareness and usage scores.
+""")
 
 # 2. 地理分布
 st.subheader("📍 Geographic Distribution")
