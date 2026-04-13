@@ -67,11 +67,11 @@ def load_and_fully_clean_data(file_path):
     
     # Frequency Cleaning (FIXED SYNTAX ERROR HERE)
     if 'Frequency' in df.columns:
-        freq_map = {'经常': 'Frequently', '有时': 'Sometimes', '很少': 'Rarely', '从不': 'Never'}
+        freq_map = {'经常': 'Frequently', '有时': 'Sometimes', '很少': 'Rarely', '几乎不': 'Almost Never'}
         df['Frequency'] = df['Frequency'].replace(freq_map)
         df['Frequency'] = pd.Categorical(
             df['Frequency'], 
-            categories=['Never', 'Rarely', 'Sometimes', 'Frequently'], 
+            categories=['Almost Never', 'Rarely', 'Sometimes', 'Frequently'], 
             ordered=True
         )
     
