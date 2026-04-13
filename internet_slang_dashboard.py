@@ -104,7 +104,7 @@ except Exception as e:
 # --- 侧边栏 ---
 st.sidebar.header("Filters")
 gen_options = df['Gender'].unique().tolist()
-age_options = df['Age'].unique().tolist()
+age_options = sorted(df['Age'].unique().tolist())
 gen_list = st.sidebar.multiselect("Gender", gen_options, default=gen_options)
 age_list = st.sidebar.multiselect("Age Group", age_options, default=age_options)
 
@@ -113,37 +113,42 @@ f_df = df[(df['Gender'].isin(gen_list)) & (df['Age'].isin(age_list))]
 # --- UI 界面 ---
 st.title("🌐 Internet Slang Analytics Dashboard")
 
-# 1. KPI 与 甜甜圈图 (修改：增加性别比例图)
+# 1. KPI 与 三个甜甜圈图
 st.divider()
-kpi_col, pie_col1, pie_col2 = st.columns([2, 1, 1])
+kpi_col, p1, p2, p3 = st.columns([2, 1, 1, 1])
 
 with kpi_col:
     st.markdown("#### Key Metrics")
     m1, m2 = st.columns(2)
-    m1.metric("Avg Awareness", round(f_df['Hearing Score'].mean(), 2) if not f_df.empty else 0)
-    m2.metric("Avg Usage", round(f_df['Using Score'].mean(), 2) if not f_df.empty else 0)
-    
+    m1.metric("Avg Awareness", f"{f_df['Hearing Score'].mean():.2f}" if not f_df.empty else "0")
+    m2.metric("Avg Usage", f"{f_df['Using Score'].mean():.2f}" if not f_df.empty else "0")
     m3, m4 = st.columns(2)
-    m3.metric("Avg Total Score", round(f_df['Total Score'].mean(), 2) if not f_df.empty else 0)
-    m4.metric("Total Samples", len(f_df))
+    m3.metric("Avg Total", f"{f_df['Total Score'].mean():.2f}" if not f_df.empty else "0")
+    m4.metric("Samples", len(f_df))
 
-with pie_col1:
+with p1:
     if not f_df.empty:
-        gender_counts = f_df['Gender'].value_counts().reset_index()
-        gender_counts.columns = ['Gender', 'Count']
-        fig_gen = px.pie(gender_counts, values='Count', names='Gender', hole=0.5, 
-                         title="Gender Ratio", color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig_gen.update_layout(height=260, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
-        st.plotly_chart(fig_gen, use_container_width=True)
+        g_counts = f_df['Gender'].value_counts().reset_index()
+        fig_g = px.pie(g_counts, values='count', names='Gender', hole=0.5, title="Gender",
+                       color_discrete_sequence=px.colors.qualitative.Pastel)
+        fig_g.update_layout(height=220, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
+        st.plotly_chart(fig_g, use_container_width=True)
 
-with pie_col2:
-    if not f_df.empty and 'UM Student' in f_df.columns:
-        um_counts = f_df['UM Student'].value_counts().reset_index()
-        um_counts.columns = ['Status', 'Count']
-        fig_um = px.pie(um_counts, values='Count', names='Status', hole=0.5, 
-                        title="UM Student Ratio", color_discrete_sequence=px.colors.qualitative.Set3)
-        fig_um.update_layout(height=260, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
-        st.plotly_chart(fig_um, use_container_width=True)
+with p2:
+    if not f_df.empty:
+        a_counts = f_df['Age'].value_counts().reset_index()
+        fig_a = px.pie(a_counts, values='count', names='Age', hole=0.5, title="Age Group",
+                       color_discrete_sequence=px.colors.qualitative.Safe)
+        fig_a.update_layout(height=220, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
+        st.plotly_chart(fig_a, use_container_width=True)
+
+with p3:
+    if not f_df.empty:
+        u_counts = f_df['UM Student'].value_counts().reset_index()
+        fig_u = px.pie(u_counts, values='count', names='UM Student', hole=0.5, title="UM Status",
+                       color_discrete_sequence=px.colors.qualitative.Set3)
+        fig_u.update_layout(height=220, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
+        st.plotly_chart(fig_u, use_container_width=True)
 
 # 2. 地理分布
 st.subheader("📍 Geographic Distribution")
@@ -155,7 +160,7 @@ if not map_data.empty:
     )
     st.plotly_chart(fig_map, use_container_width=True)
 
-# 3. 综合对比 (Scatter Plot)
+# 3. 综合对比
 st.divider()
 st.subheader("📊 Slang Landscape: Awareness vs. Usage")
 if not f_df.empty:
@@ -166,7 +171,8 @@ if not f_df.empty:
             "Awareness Score": f_df[f"Score_Aw_{i}"].mean(),
             "Usage Score": f_df[f"Score_Us_{i}"].mean()
         })
-    fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score", color="Slang", text="Slang", height=500)
+    fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score", 
+                          color="Slang", text="Slang", height=500)
     fig_comp.update_traces(textposition='top center')
     st.plotly_chart(fig_comp, use_container_width=True)
 
@@ -180,5 +186,6 @@ if not f_df.empty:
     item_avg = f_df.groupby('Gender', observed=True)[[h_col, u_col]].mean().reset_index()
     item_avg.columns = ['Gender', 'Awareness', 'Usage']
     
-    fig_ind = px.bar(item_avg, x='Gender', y=['Awareness', 'Usage'], barmode='group', title=f"Comparison: {SLANG_CONTENT[slang_idx]}")
+    fig_ind = px.bar(item_avg, x='Gender', y=['Awareness', 'Usage'], barmode='group', 
+                     title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}")
     st.plotly_chart(fig_ind, use_container_width=True)
