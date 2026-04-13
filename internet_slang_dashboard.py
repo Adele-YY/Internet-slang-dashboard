@@ -134,7 +134,8 @@ SCENE_MAP = {
     '线上私聊（微信、QQ等）': 'Online Private Chat',
     '社交媒体互动（发帖、评论、转发等）': 'Social Media Interaction',
     '工作/学习正式场合': 'Formal Work/Study',
-    '游戏语音/文字': 'Gaming Chat',
+    '游戏交流': 'Gaming Chat',
+    '特殊场合（体育赛事、演唱会等）': 'Gaming Chat',
     '其他': 'Others'
 }
 
