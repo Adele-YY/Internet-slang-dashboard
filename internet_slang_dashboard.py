@@ -30,6 +30,7 @@ SLANG_CONTENT = [
     "我不行了"
 ]
 
+
 @st.cache_data
 def load_and_fully_clean_data(file_path):
     df = pd.read_csv(file_path, encoding='utf-8-sig')
@@ -48,25 +49,27 @@ def load_and_fully_clean_data(file_path):
 
     temp_cols = list(df.columns)
     for i in range(7):
-        if len(temp_cols) > 11 + i: temp_cols[11 + i] = f"Score_Aw_{i}"
-        if len(temp_cols) > 19 + i: temp_cols[19 + i] = f"Score_Us_{i}"
+        if len(temp_cols) > 11 + i:
+            temp_cols[11 + i] = f"Score_Aw_{i}"
+        if len(temp_cols) > 19 + i:
+            temp_cols[19 + i] = f"Score_Us_{i}"
     df.columns = temp_cols
     df.rename(columns=rename_dict, inplace=True)
 
     if 'Gender' in df.columns:
         df['Gender'] = df['Gender'].replace({'女': 'Female', '男': 'Male'})
     if 'Age' in df.columns:
-        df['Age'] = df['Age'].replace({'18岁以下': 'Under 18', '18～30岁': '18-30', '30岁以上': 'Over 30'})
-        df['Age'] = pd.Categorical(df['Age'], categories=['Under 18', '18-30', 'Over 30'], ordered=True)
+        df['Age'] = df['Age'].replace(
+            {'18岁以下': 'Under 18', '18～30岁': '18-30', '30岁以上': 'Over 30'})
+        df['Age'] = pd.Categorical(df['Age'], categories=[
+                                   'Under 18', '18-30', 'Over 30'], ordered=True)
     if 'UM Student' in df.columns:
-        df['UM Student'] = df['UM Student'].replace({'是': 'UM Student', '否': 'Non-UM Student'})
+        df['UM Student'] = df['UM Student'].replace(
+            {'是': 'UM Student', '否': 'Non-UM Student'})
 
-    # 频率排序逻辑
-    freq_order = ['基本不刷', '偶尔刷刷', '经常刷', '几乎整天都在刷']
-    df['Frequency'] = pd.Categorical(df['Frequency'], categories=freq_order, ordered=True)
-    
-    cleanup_map = {'经常刷/听到': 2, '有印象': 1, '没听过': 0, '经常会用': 2, '有时会用': 1, '从来不用': 0}
-    
+    cleanup_map = {'经常刷/听到': 2, '有印象': 1,
+                   '没听过': 0, '经常会用': 2, '有时会用': 1, '从来不用': 0}
+
     def safe_convert(series):
         return pd.to_numeric(series.replace(cleanup_map), errors='coerce').fillna(0).astype(float)
 
@@ -74,9 +77,11 @@ def load_and_fully_clean_data(file_path):
     u_cols = [f"Score_Us_{i}" for i in range(7)]
 
     for col in h_cols:
-        if col in df.columns: df[col] = safe_convert(df[col])
+        if col in df.columns:
+            df[col] = safe_convert(df[col])
     for col in u_cols:
-        if col in df.columns: df[col] = safe_convert(df[col])
+        if col in df.columns:
+            df[col] = safe_convert(df[col])
 
     df['Hearing Score'] = df[h_cols].sum(axis=1)
     df['Using Score'] = df[u_cols].sum(axis=1)
@@ -100,6 +105,7 @@ def load_and_fully_clean_data(file_path):
 
     return df
 
+
 # --- 数据加载 ---
 try:
     df = load_and_fully_clean_data('internet_slang.csv')
@@ -112,7 +118,8 @@ st.sidebar.header("Filters")
 gen_options = df['Gender'].unique().tolist()
 age_options = df['Age'].unique().tolist()
 gen_list = st.sidebar.multiselect("Gender", gen_options, default=gen_options)
-age_list = st.sidebar.multiselect("Age Group", age_options, default=age_options)
+age_list = st.sidebar.multiselect(
+    "Age Group", age_options, default=age_options)
 
 f_df = df[(df['Gender'].isin(gen_list)) & (df['Age'].isin(age_list))]
 
@@ -126,57 +133,36 @@ kpi_col, pie_col1, pie_col2 = st.columns([2, 1, 1])
 with kpi_col:
     st.markdown("#### Key Metrics")
     m1, m2 = st.columns(2)
-    m1.metric("Avg Awareness", round(f_df['Hearing Score'].mean(), 2) if not f_df.empty else 0)
-    m2.metric("Avg Usage", round(f_df['Using Score'].mean(), 2) if not f_df.empty else 0)
-    
+    m1.metric("Avg Awareness", round(
+        f_df['Hearing Score'].mean(), 2) if not f_df.empty else 0)
+    m2.metric("Avg Usage", round(
+        f_df['Using Score'].mean(), 2) if not f_df.empty else 0)
+
     m3, m4 = st.columns(2)
-    m3.metric("Avg Total Score", round(f_df['Total Score'].mean(), 2) if not f_df.empty else 0)
+    m3.metric("Avg Total Score", round(
+        f_df['Total Score'].mean(), 2) if not f_df.empty else 0)
     m4.metric("Samples Count", len(f_df))
 
-# 1. 顶部指标与分布 (新增频率甜甜圈图)
-st.divider()
-kpi_col, p1, p2, p3 = st.columns([1.5, 1, 1, 1])
+with pie_col1:
+    if not f_df.empty:
+        gender_counts = f_df['Gender'].value_counts().reset_index()
+        gender_counts.columns = ['Gender', 'Count']
+        fig_gen = px.pie(gender_counts, values='Count', names='Gender', hole=0.5,
+                         title="Gender Ratio", color_discrete_sequence=px.colors.qualitative.Pastel)
+        fig_gen.update_layout(height=250, margin=dict(
+            t=40, b=0, l=0, r=0), showlegend=False)
+        st.plotly_chart(fig_gen, use_container_width=True)
 
-with kpi_col:
-    st.markdown("#### 📈 Key Metrics")
-    st.metric("Avg Total Score", f"{f_df['Total Score'].mean():.2f}")
-    st.metric("Samples Count", len(f_df))
+with pie_col2:
+    if not f_df.empty and 'UM Student' in f_df.columns:
+        um_counts = f_df['UM Student'].value_counts().reset_index()
+        um_counts.columns = ['Status', 'Count']
+        fig_um = px.pie(um_counts, values='Count', names='Status', hole=0.5,
+                        title="Student Status", color_discrete_sequence=px.colors.qualitative.Set3)
+        fig_um.update_layout(height=250, margin=dict(
+            t=40, b=0, l=0, r=0), showlegend=False)
+        st.plotly_chart(fig_um, use_container_width=True)
 
-with p1:
-    g_counts = f_df['Gender'].value_counts().reset_index()
-    fig_g = px.pie(g_counts, values='count', names='Gender', hole=0.6, title="Gender", color_discrete_sequence=PALETTE_GENDER)
-    fig_g.update_layout(height=200, margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
-    st.plotly_chart(fig_g, use_container_width=True)
-
-with p2:
-    u_counts = f_df['UM Student'].value_counts().reset_index()
-    fig_u = px.pie(u_counts, values='count', names='UM Student', hole=0.6, title="UM Status", color_discrete_sequence=PALETTE_UM)
-    fig_u.update_layout(height=200, margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
-    st.plotly_chart(fig_u, use_container_width=True)
-
-with p3:
-    # 新增：频率甜甜圈
-    fr_counts = f_df['Frequency'].value_counts().reset_index()
-    fig_fr = px.pie(fr_counts, values='count', names='Frequency', hole=0.6, title="Video Frequency", color_discrete_sequence=PALETTE_FREQ)
-    fig_fr.update_layout(height=200, margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
-    st.plotly_chart(fig_fr, use_container_width=True)
-
-# 2. 频率与得分关联分析 (新增部分)
-st.divider()
-st.subheader("🎬 Video Frequency vs. Total Slang Score")
-if not f_df.empty:
-    # 使用箱线图展示分布情况，并用抖动点展示具体样本
-    fig_box = px.box(
-        f_df, x="Frequency", y="Total Score", 
-        color="Frequency", points="all",
-        color_discrete_sequence=PALETTE_FREQ,
-        template="plotly_white",
-        labels={"Total Score": "Total Awareness & Usage Score"}
-    )
-    fig_box.update_layout(showlegend=False, height=450)
-    st.plotly_chart(fig_box, use_container_width=True)
-    st.markdown("💡 **Insight:** Usually, higher video frequency correlates with higher slang scores, showing 'Social Media Immersion'.")
-    
 # 2. 地理分布
 st.subheader("📍 Geographic Distribution")
 map_data = f_df.dropna(subset=['lat'])
@@ -198,7 +184,7 @@ if not f_df.empty:
             "Awareness Score": f_df[f"Score_Aw_{i}"].mean(),
             "Usage Score": f_df[f"Score_Us_{i}"].mean()
         })
-    fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score", 
+    fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score",
                           color="Slang", text="Slang", height=500)
     fig_comp.update_traces(textposition='top center')
     st.plotly_chart(fig_comp, use_container_width=True)
@@ -221,37 +207,40 @@ if not f_df.empty:
             "Score": f_df[f"Score_Us_{i}"].mean(),
             "Type": "Usage"
         })
-    
+
     bar_df = pd.DataFrame(bar_data_list)
-    
+
     # 绘制并列柱状图
     fig_bar_comp = px.bar(
-        bar_df, 
-        x="Slang", 
-        y="Score", 
-        color="Type", 
+        bar_df,
+        x="Slang",
+        y="Score",
+        color="Type",
         barmode="group",
         height=500,
         color_discrete_map={"Awareness": "#636EFA", "Usage": "#EF553B"},
         labels={"Score": "Average Score", "Type": "Metric"}
     )
-    
-    fig_bar_comp.update_layout(xaxis_tickangle=-45) # 倾斜字体防止重叠
+
+    fig_bar_comp.update_layout(xaxis_tickangle=-45)  # 倾斜字体防止重叠
     st.plotly_chart(fig_bar_comp, use_container_width=True)
-    
+
     # 补充：计算转化率 (知晓后真正使用的比例)
-    st.markdown("💡 **Insight:** From the chart above, we can see the awareness and usage levels of different slangs.")
-    
+    st.markdown(
+        "💡 **Insight:** From the chart above, we can see the awareness and usage levels of different slangs.")
+
 # 4. 单项深入分析
 st.divider()
 st.subheader("🔎 Individual Slang Item Analysis")
-slang_idx = st.selectbox("Select Slang to Inspect:", range(len(SLANG_CONTENT)), format_func=lambda x: SLANG_CONTENT[x])
+slang_idx = st.selectbox("Select Slang to Inspect:", range(
+    len(SLANG_CONTENT)), format_func=lambda x: SLANG_CONTENT[x])
 
 if not f_df.empty:
     h_col, u_col = f"Score_Aw_{slang_idx}", f"Score_Us_{slang_idx}"
-    item_avg = f_df.groupby('Gender', observed=True)[[h_col, u_col]].mean().reset_index()
+    item_avg = f_df.groupby('Gender', observed=True)[
+        [h_col, u_col]].mean().reset_index()
     item_avg.columns = ['Gender', 'Awareness', 'Usage']
-    
-    fig_ind = px.bar(item_avg, x='Gender', y=['Awareness', 'Usage'], barmode='group', 
+
+    fig_ind = px.bar(item_avg, x='Gender', y=['Awareness', 'Usage'], barmode='group',
                      title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}")
     st.plotly_chart(fig_ind, use_container_width=True)
