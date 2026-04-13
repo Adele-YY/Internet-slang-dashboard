@@ -147,6 +147,13 @@ with pie_col2:
         fig_um.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
         st.plotly_chart(fig_um, use_container_width=True)
 
+with p3:
+    # 新增：频率甜甜圈
+    fr_counts = f_df['Frequency'].value_counts().reset_index()
+    fig_fr = px.pie(fr_counts, values='count', names='Frequency', hole=0.6, title="Video Frequency", color_discrete_sequence=PALETTE_FREQ)
+    fig_fr.update_layout(height=200, margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
+    st.plotly_chart(fig_fr, use_container_width=True)
+
 # 2. 地理分布
 st.subheader("📍 Geographic Distribution")
 map_data = f_df.dropna(subset=['lat'])
