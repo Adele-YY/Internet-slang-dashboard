@@ -188,3 +188,23 @@ if not f_df.empty:
     a_trend = a_trend.sort_values('Age')
     fig_age = px.line(a_trend, x='Age', y=['Hearing Score', 'Using Score'], markers=True)
     st.plotly_chart(fig_age, use_container_width=True)
+
+# 5. 单项分析 (Bar Chart - 补全部分)
+st.divider()
+st.subheader("🔎 Individual Slang Item Analysis")
+slang_idx = st.selectbox("Select Slang to Inspect:", range(
+    len(SLANG_CONTENT)), format_func=lambda x: SLANG_CONTENT[x])
+
+if not f_df.empty:
+    h_col, u_col = f"Score_Aw_{slang_idx}", f"Score_Us_{slang_idx}"
+    # 强制转换类型以防万一
+    item_df = f_df.copy()
+    item_df[h_col] = item_df[h_col].astype(float)
+    item_df[u_col] = item_df[u_col].astype(float)
+
+    item_avg = item_df.groupby('Gender')[[h_col, u_col]].mean().reset_index()
+    item_avg.columns = ['Gender', 'Awareness', 'Usage']
+
+    fig_ind = px.bar(item_avg, x='Gender', y=[
+                     'Awareness', 'Usage'], barmode='group', title=f"Comparison: {SLANG_CONTENT[slang_idx]}")
+    st.plotly_chart(fig_ind, use_container_width=True)
