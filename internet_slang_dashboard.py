@@ -15,7 +15,8 @@ GEO_MAP = {
     '重庆': [29.5630, 106.5516], '浙江': [30.2741, 120.1551], '上海': [31.2304, 121.4737],
     '山东': [36.6512, 117.0483], '山西': [37.8706, 112.5489], '黑龙江': [45.7569, 126.6424],
     '湖北': [30.5928, 114.3055], '安徽': [31.8612, 117.2830], '辽宁': [41.8057, 123.4315],
-    '广西': [22.8170, 108.3200], '江苏': [32.0603, 118.7969], '天津': [39.0841, 117.2008]
+    '广西': [22.8170, 108.3200], '江苏': [32.0603, 118.7969], '天津': [39.0841, 117.2008],
+    '国外': [20.0, 0.0]
 }
 
 # 热梗内容映射
@@ -61,7 +62,7 @@ def load_and_fully_clean_data(file_path):
         df['UM Student'] = df['UM Student'].replace({'是': 'UM Student', '否': 'Non-UM Student'})
 
     cleanup_map = {'经常刷/听到': 2, '有印象': 1, '没听过': 0, '经常会用': 2, '有时会用': 1, '从来不用': 0}
-
+    
     def safe_convert(series):
         return pd.to_numeric(series.replace(cleanup_map), errors='coerce').fillna(0).astype(float)
 
@@ -114,7 +115,7 @@ f_df = df[(df['Gender'].isin(gen_list)) & (df['Age'].isin(age_list))]
 # --- UI 界面 ---
 st.title("🌐 Internet Slang Analytics Dashboard")
 
-# 1. KPI 与 甜甜圈图 (修改：增加性别比例图)
+# 1. KPI 与 甜甜圈图 (更新：增加性别比例图)
 st.divider()
 kpi_col, pie_col1, pie_col2 = st.columns([2, 1, 1])
 
@@ -126,7 +127,7 @@ with kpi_col:
     
     m3, m4 = st.columns(2)
     m3.metric("Avg Total Score", round(f_df['Total Score'].mean(), 2) if not f_df.empty else 0)
-    m4.metric("Total Samples", len(f_df))
+    m4.metric("Samples Count", len(f_df))
 
 with pie_col1:
     if not f_df.empty:
@@ -134,7 +135,7 @@ with pie_col1:
         gender_counts.columns = ['Gender', 'Count']
         fig_gen = px.pie(gender_counts, values='Count', names='Gender', hole=0.5, 
                          title="Gender Ratio", color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig_gen.update_layout(height=260, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
+        fig_gen.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
         st.plotly_chart(fig_gen, use_container_width=True)
 
 with pie_col2:
@@ -142,8 +143,8 @@ with pie_col2:
         um_counts = f_df['UM Student'].value_counts().reset_index()
         um_counts.columns = ['Status', 'Count']
         fig_um = px.pie(um_counts, values='Count', names='Status', hole=0.5, 
-                        title="UM Student Ratio", color_discrete_sequence=px.colors.qualitative.Set3)
-        fig_um.update_layout(height=260, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
+                        title="Student Status", color_discrete_sequence=px.colors.qualitative.Set3)
+        fig_um.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
         st.plotly_chart(fig_um, use_container_width=True)
 
 # 2. 地理分布
@@ -156,7 +157,7 @@ if not map_data.empty:
     )
     st.plotly_chart(fig_map, use_container_width=True)
 
-# 3. 综合对比 (Scatter Plot)
+# 3. 散点对比
 st.divider()
 st.subheader("📊 Slang Landscape: Awareness vs. Usage")
 if not f_df.empty:
@@ -167,7 +168,8 @@ if not f_df.empty:
             "Awareness Score": f_df[f"Score_Aw_{i}"].mean(),
             "Usage Score": f_df[f"Score_Us_{i}"].mean()
         })
-    fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score", color="Slang", text="Slang", height=500)
+    fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score", 
+                          color="Slang", text="Slang", height=500)
     fig_comp.update_traces(textposition='top center')
     st.plotly_chart(fig_comp, use_container_width=True)
 
@@ -181,5 +183,6 @@ if not f_df.empty:
     item_avg = f_df.groupby('Gender', observed=True)[[h_col, u_col]].mean().reset_index()
     item_avg.columns = ['Gender', 'Awareness', 'Usage']
     
-    fig_ind = px.bar(item_avg, x='Gender', y=['Awareness', 'Usage'], barmode='group', title=f"Comparison: {SLANG_CONTENT[slang_idx]}")
+    fig_ind = px.bar(item_avg, x='Gender', y=['Awareness', 'Usage'], barmode='group', 
+                     title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}")
     st.plotly_chart(fig_ind, use_container_width=True)
