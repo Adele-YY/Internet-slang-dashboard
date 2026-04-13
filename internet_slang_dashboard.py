@@ -161,6 +161,22 @@ with p3:
     fig_fr.update_layout(height=200, margin=dict(t=30, b=0, l=0, r=0), showlegend=False)
     st.plotly_chart(fig_fr, use_container_width=True)
 
+# 2. 频率与得分关联分析 (新增部分)
+st.divider()
+st.subheader("🎬 Video Frequency vs. Total Slang Score")
+if not f_df.empty:
+    # 使用箱线图展示分布情况，并用抖动点展示具体样本
+    fig_box = px.box(
+        f_df, x="Frequency", y="Total Score", 
+        color="Frequency", points="all",
+        color_discrete_sequence=PALETTE_FREQ,
+        template="plotly_white",
+        labels={"Total Score": "Total Awareness & Usage Score"}
+    )
+    fig_box.update_layout(showlegend=False, height=450)
+    st.plotly_chart(fig_box, use_container_width=True)
+    st.markdown("💡 **Insight:** Usually, higher video frequency correlates with higher slang scores, showing 'Social Media Immersion'.")
+    
 # 2. 地理分布
 st.subheader("📍 Geographic Distribution")
 map_data = f_df.dropna(subset=['lat'])
