@@ -153,18 +153,22 @@ if not map_data.empty:
     )
     st.plotly_chart(fig_map, use_container_width=True)
 
-# 3. 散点图
+# 3. 综合对比 (Scatter Plot)
 st.divider()
 st.subheader("📊 Slang Landscape: Awareness vs. Usage")
 if not f_df.empty:
     comp_list = []
+    # 重新提取当前过滤状态下的均值
     for i in range(len(SLANG_CONTENT)):
+        aw_col, us_col = f"Score_Aw_{i}", f"Score_Us_{i}"
         comp_list.append({
             "Slang": SLANG_CONTENT[i],
-            "Awareness Score": f_df[f"Score_Aw_{i}"].mean(),
-            "Usage Score": f_df[f"Score_Us_{i}"].mean()
+            "Awareness Score": f_df[aw_col].mean(),
+            "Usage Score": f_df[us_col].mean()
         })
-    fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score", color="Slang", text="Slang", height=500)
+    comp_df = pd.DataFrame(comp_list)
+    fig_comp = px.scatter(comp_df, x="Awareness Score",
+                          y="Usage Score", color="Slang", text="Slang", height=500)
     fig_comp.update_traces(textposition='top center')
     st.plotly_chart(fig_comp, use_container_width=True)
 
