@@ -67,7 +67,11 @@ def load_and_fully_clean_data(file_path):
 
     # 3. 评分计算 (【核心修复2】：使用 pd.to_numeric 处理异常字符串)
     cleanup_map = {'经常刷/听到': 2, '有印象': 1, '没听过': 0, '经常会用': 2, '有时会用': 1, '从来不用': 0}
-    
+
+    def safe_convert(series):
+        # 先按地图替换文本，再强转数字，错误的变NaN，最后补0
+        return pd.to_numeric(series.replace(cleanup_map), errors='coerce').fillna(0).astype(float)
+
     h_cols = [f"Score_Aw_{i}" for i in range(7)]
     u_cols = [f"Score_Us_{i}" for i in range(7)]
 
