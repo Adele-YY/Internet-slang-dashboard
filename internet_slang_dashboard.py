@@ -8,7 +8,7 @@ import plotly.express as px
 # 1. Page Configuration
 st.set_page_config(page_title="🌐 Internet Slang Dashboard", layout="wide")
 
-with st.expander("📝 View Scoring Standard & Methodology", expanded=False):
+with st.expander("📝 View Scoring Standard", expanded=False):
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("**Awareness Score (Hearing):**")
