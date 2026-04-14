@@ -267,6 +267,40 @@ if not map_data.empty:
 
 st.markdown("⚠️ **Note:** Locations are approximated based on IP data and do not represent precise physical addresses.")
 
+# --- New Section: Age vs Total Score ---
+st.divider()
+st.subheader("🎂 Age Group vs Slang Proficiency")
+
+if not f_df.empty:
+    # 1. 计算各年龄段的平均分（用于辅助说明）
+    age_avg = f_df.groupby('Age', observed=True)['Total Score'].mean().reset_index()
+    
+    # 2. 创建箱线图，展示得分分布
+    fig_age_score = px.box(
+        f_df, 
+        x='Age', 
+        y='Total Score', 
+        color='Age',
+        points="all", # 显示所有数据点，增加散点透视感
+        category_orders={"Age": ["Under 18", "18-30", "Over 30"]}, # 确保年龄轴有序
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        template='plotly_white',
+        labels={'Total Score': 'Total Score (Awareness + Usage)'}
+    )
+    
+    fig_age_score.update_layout(
+        showlegend=False,
+        xaxis_title="Age Group",
+        yaxis_title="Total Score",
+        height=500
+    )
+    
+    st.plotly_chart(fig_age_score, use_container_width=True)
+    
+    # 动态 Insight
+    highest_age = age_avg.loc[age_avg['Total Score'].idxmax(), 'Age']
+    st.markdown(f"💡 **Insight:** On average, the **{highest_age}** group shows the highest engagement with internet slang.")
+    
 # 4. Slang Comparative Analysis
 st.divider()
 st.subheader("📊 Slang Landscape: Awareness & Usage")
