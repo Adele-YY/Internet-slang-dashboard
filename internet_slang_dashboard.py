@@ -203,7 +203,7 @@ st.divider()
 kpi_col, pie_col1, pie_col2 = st.columns([2, 1, 1])
 
 with kpi_col:
-    st.markdown("#### Key Metrics")
+    st.markdown("#### 📈 Key Metrics")
     m1, m2 = st.columns(2)
     m1.metric("Avg Awareness", round(f_df['Hearing Score'].mean(), 2) if not f_df.empty else 0)
     m2.metric("Avg Usage", round(f_df['Using Score'].mean(), 2) if not f_df.empty else 0)
