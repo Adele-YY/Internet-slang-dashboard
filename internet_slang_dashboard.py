@@ -87,7 +87,7 @@ def load_and_fully_clean_data(file_path):
     # 5. Impact
     impact_map = {
         '有积极影响': 'Positive Impact',
-        '有消极影响': 'Negative Impact',
+        '有负面影响': 'Negative Impact',
         '基本无影响': 'No Significant Impact',
         '无影响': 'No Significant Impact'
     }
