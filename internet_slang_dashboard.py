@@ -342,7 +342,7 @@ with col_scene:
 
 # 8. Influence
 st.divider()
-st.subheader("Perceived Impact on Daily Communication")
+st.subheader("🧠 Perceived Impact on Daily Communication")
 if not f_df.empty:
     impact_counts = f_df['Influence'].value_counts().reset_index()
     impact_counts.columns = ['Impact', 'Count']
