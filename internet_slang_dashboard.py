@@ -8,7 +8,7 @@ import plotly.express as px
 # 1. Page Configuration
 st.set_page_config(page_title="🌐 Internet Slang Dashboard", layout="wide")
 
-with st.expander("📝 View Scoring Standard & Methodology", expanded=True):
+with st.expander("📝 View Scoring Standard & Methodology", expanded=False):
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("**Awareness Score (Hearing):**")
@@ -83,7 +83,16 @@ def load_and_fully_clean_data(file_path):
         freq_map = {'经常': 'Frequently', '有时': 'Sometimes', '几乎不': 'Almost Never'}
         df['Frequency'] = df['Frequency'].replace(freq_map)
         df['Frequency'] = pd.Categorical(df['Frequency'], categories=['Almost Never', 'Sometimes', 'Frequently'], ordered=True)
-    
+
+    # 5. Impact
+    impact_map = {
+        '有积极影响': 'Positive Impact',
+        '有消极影响': 'Negative Impact',
+        '基本无影响': 'No Significant Impact',
+        '无影响': 'No Significant Impact'
+    }
+    if 'Influence' in df.columns:
+        df['Influence'] = df['Influence'].replace(impact_map)
     if 'UM Student' in df.columns:
         df['UM Student'] = df['UM Student'].replace({'是': 'UM Student', '否': 'Non-UM Student'})
 
@@ -330,3 +339,19 @@ with col_scene:
         with st.expander("Explore 'Other' Scenarios"):
             if scene_others: st.write(", ".join(scene_others))
             else: st.write("No specific details provided for 'Others'.")
+
+# 8. Influence
+st.divider()
+st.subheader("Perceived Impact on Daily Communication")
+if not f_df.empty:
+    impact_counts = f_df['Influence'].value_counts().reset_index()
+    impact_counts.columns = ['Impact', 'Count']
+    
+    fig_impact = px.pie(
+        impact_counts, values='Count', names='Impact', hole=0.5,
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        template='plotly_white'
+    )
+    fig_impact.update_traces(textinfo='percent+label', pull=[0.05, 0, 0])
+    fig_impact.update_layout(margin=dict(t=30, b=30, l=30, r=30))
+    st.plotly_chart(fig_impact, use_container_width=True)
