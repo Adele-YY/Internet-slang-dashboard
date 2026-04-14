@@ -110,20 +110,23 @@ def load_and_fully_clean_data(file_path):
 
     return df
 
-# 注意：process_multi_choice 建议定义在 load_and_fully_clean_data 之外，方便后续调用
-def process_multi_choice(series, translation_map):
-    all_items = []
+def process_multi_choice_with_details(series, translation_map):
+    all_translated = []
+    raw_others = []
     for val in series.dropna():
         items = str(val).split('┋')
         for i in items:
             name = i.strip()
-            # 如果在 map 里就翻译，不在或者原本是“其他”就归为 Others
-            translated = translation_map.get(name, 'Others')
-            all_items.append(translated)
+            if name in translation_map:
+                all_translated.append(translation_map[name])
+            else:
+                all_translated.append('Others')
+                if name not in ['其他', 'Others', '']:
+                    raw_others.append(name)
     
-    counts = pd.Series(all_items).value_counts().reset_index()
+    counts = pd.Series(all_translated).value_counts().reset_index()
     counts.columns = ['Item', 'Count']
-    return counts
+    return counts, list(set(raw_others))
     
 # 定义翻译字典 (放在主程序全局位置)
 CHANNEL_MAP = {
@@ -275,47 +278,34 @@ if not f_df.empty:
                      title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}")
     st.plotly_chart(fig_ind, use_container_width=True)
 
-# 7. Other Info
+# 7. Final Charts: Acquisition & Scenarios
 st.divider()
 st.subheader("📡 Acquisition Channels & Usage Scenarios")
-
 col_chan, col_scene = st.columns(2)
 
 with col_chan:
     st.markdown("#### Top Acquisition Channels")
     if not f_df.empty:
-        chan_data = process_multi_choice(f_df['Acquisition Channel'], CHANNEL_MAP)
-        
-        # 主图表：过滤掉 Others，让重点更清晰
-        main_chan = chan_data[chan_data['Item'] != 'Others']
-        fig_chan = px.bar(
-            main_chan.sort_values('Count', ascending=True), 
-            x='Count', y='Item', orientation='h',
-            color='Item', color_discrete_sequence=px.colors.qualitative.Pastel,
-            template='plotly_white', height=350
-        )
-        fig_chan.update_layout(showlegend=False, margin=dict(l=0, r=20, t=20, b=0), yaxis_title=None)
+        chan_data, chan_others = process_multi_choice_with_details(f_df['Acquisition Channel'], CHANNEL_MAP)
+        # 直接显示包含 Others 的完整统计图
+        fig_chan = px.bar(chan_data.sort_values('Count', ascending=True), 
+                          x='Count', y='Item', orientation='h', color='Item',
+                          color_discrete_sequence=px.colors.qualitative.Pastel, template='plotly_white', height=400)
         st.plotly_chart(fig_chan, use_container_width=True)
         
-        # 把 Others 藏在这里
-        others_count = chan_data[chan_data['Item'] == 'Others']['Count'].sum()
-        with st.expander(f"See Details of 'Others' ({others_count} mentions)"):
-            st.write("These include less frequent sources and custom responses from the survey.")
+        with st.expander("Explore User-defined 'Other' Channels"):
+            if chan_others: st.write(", ".join(chan_others))
+            else: st.write("No specific details provided for 'Others'.")
 
 with col_scene:
     st.markdown("#### Usage Scenarios")
     if not f_df.empty:
-        scene_data = process_multi_choice(f_df['Using Scene'], SCENE_MAP)
-        
-        fig_scene = px.pie(
-            scene_data, values='Count', names='Item',
-            hole=0.5, color_discrete_sequence=px.colors.qualitative.Safe,
-            template='plotly_white', height=350
-        )
-        fig_scene.update_layout(margin=dict(l=0, r=0, t=20, b=0), legend=dict(orientation="v", y=0.5))
+        scene_data, scene_others = process_multi_choice_with_details(f_df['Using Scene'], SCENE_MAP)
+        # 饼图中包含 Others 扇区
+        fig_scene = px.pie(scene_data, values='Count', names='Item', hole=0.5,
+                           color_discrete_sequence=px.colors.qualitative.Safe, template='plotly_white', height=400)
         st.plotly_chart(fig_scene, use_container_width=True)
         
-        with st.expander("Usage Insights"):
-            st.info("The data shows a strong preference for informal digital environments.")
-
-st.markdown("💡 **Insight:** Most users acquire slang via **Short Video Platforms**, while usage is predominantly concentrated in **Online Private Chats**.")
+        with st.expander("Explore User-defined 'Other' Scenarios"):
+            if scene_others: st.write(", ".join(scene_others))
+            else: st.write("No specific details provided for 'Others'.")
