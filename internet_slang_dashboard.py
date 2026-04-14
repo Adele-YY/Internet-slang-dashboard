@@ -301,7 +301,7 @@ if not f_df.empty:
     highest_age = age_avg.loc[age_avg['Total Score'].idxmax(), 'Age']
     st.markdown(f"💡 **Insight:** On average, the **{highest_age}** group shows the highest engagement with internet slang.")
     
-# 4. Slang Comparative Analysis
+# 5. Slang Comparative Analysis
 st.divider()
 st.subheader("📊 Slang Landscape: Awareness & Usage")
 if not f_df.empty:
@@ -317,7 +317,7 @@ if not f_df.empty:
     fig_comp.update_traces(textposition='top center')
     st.plotly_chart(fig_comp, use_container_width=True)
 
-# 5. Bar Comparison Analysis
+# 6. Bar Comparison Analysis
 st.divider()
 st.subheader("📊 Comparative Analysis: Awareness & Usage by Slang Item")
 if not f_df.empty:
@@ -331,18 +331,41 @@ if not f_df.empty:
     fig_bar_comp.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_bar_comp, use_container_width=True)
 
-# 6. Individual Analysis
+# 7. Individual Analysis
 st.divider()
 st.subheader("🔎 Individual Slang Item Analysis")
 slang_idx = st.selectbox("Select Slang to Inspect:", range(len(SLANG_CONTENT)), format_func=lambda x: SLANG_CONTENT[x])
+
 if not f_df.empty:
+    # 聚合数据
     item_avg = f_df.groupby('Gender', observed=True)[[f"Score_Aw_{slang_idx}", f"Score_Us_{slang_idx}"]].mean().reset_index()
     item_avg.columns = ['Gender', 'Awareness', 'Usage']
-    fig_ind = px.bar(item_avg, x='Gender', y=['Awareness', 'Usage'], barmode='group',
-                     title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}")
+    
+    # 转换长格式以便 Plotly 绘制分组柱状图
+    item_avg_melted = item_avg.melt(id_vars='Gender', var_name='Type', value_name='Score')
+
+    # 修改后的图表：使用了低饱和度色调
+    fig_ind = px.bar(
+        item_avg_melted, 
+        x='Gender', 
+        y='Score', 
+        color='Type', 
+        barmode='group',
+        title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}",
+        # 这里使用了更柔和的调色盘：淡蓝色和浅紫色
+        color_discrete_map={"Awareness": "#B5C0D0", "Usage": "#CCD3CA"},
+        template='plotly_white'
+    )
+    
+    fig_ind.update_layout(
+        yaxis_title="Average Score",
+        legend_title_text='',
+        height=450
+    )
+    
     st.plotly_chart(fig_ind, use_container_width=True)
 
-# 7. Final Charts: Acquisition & Scenarios
+# 8. Acquisition & Scenarios
 st.divider()
 st.subheader("📡 Acquisition Channels & Usage Scenarios")
 col_chan, col_scene = st.columns(2)
@@ -374,7 +397,7 @@ with col_scene:
             if scene_others: st.write(", ".join(scene_others))
             else: st.write("No specific details provided for 'Others'.")
 
-# 8. Influence
+# 9. Influence
 st.divider()
 st.subheader("🧠 Perceived Impact on Daily Communication")
 if not f_df.empty:
