@@ -267,15 +267,15 @@ if not map_data.empty:
 
 st.markdown("⚠️ **Note:** Locations are approximated based on IP data and do not represent precise physical addresses.")
 
-# --- New Section: Age vs Total Score ---
+# 4. Age vs Total Score
 st.divider()
 st.subheader("🎂 Age Group vs Slang Proficiency")
 
 if not f_df.empty:
-    # 1. 计算各年龄段的平均分（用于辅助说明）
+    # (1) 计算各年龄段的平均分（用于辅助说明）
     age_avg = f_df.groupby('Age', observed=True)['Total Score'].mean().reset_index()
     
-    # 2. 创建箱线图，展示得分分布
+    # (2) 创建箱线图，展示得分分布
     fig_age_score = px.box(
         f_df, 
         x='Age', 
