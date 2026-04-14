@@ -6,8 +6,21 @@ import numpy as np
 import plotly.express as px
 
 # 1. Page Configuration
-st.set_page_config(page_title="Internet Slang Dashboard", layout="wide")
+st.set_page_config(page_title="🌐 Internet Slang Dashboard", layout="wide")
 
+with st.expander("📝 View Scoring Standard & Methodology", expanded=True):
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**Awareness Score (Hearing):**")
+        st.write("- 2: Frequently heard / Highly aware")
+        st.write("- 1: Vaguely familiar / Heard of")
+        st.write("- 0: Never heard of")
+    with c2:
+        st.markdown("**Usage Score:**")
+        st.write("- 2: Frequently use in daily life")
+        st.write("- 1: Occasionally use")
+        st.write("- 0: Never use")
+        
 # Geographic Coordinates Mapping
 GEO_MAP = {
     '澳门': [22.1987, 113.5439], '广东': [23.1291, 113.2644], '江西': [28.6761, 115.8921],
