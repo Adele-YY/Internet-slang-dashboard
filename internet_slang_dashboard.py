@@ -217,7 +217,7 @@ with pie_col1:
         gender_counts = f_df['Gender'].value_counts().reset_index()
         gender_counts.columns = ['Gender', 'Count']
         fig_gen = px.pie(gender_counts, values='Count', names='Gender', hole=0.5,
-                         title="Gender Ratio", color_discrete_sequence=px.colors.qualitative.Pastel)
+                         title="Gender", color_discrete_sequence=px.colors.qualitative.Pastel)
         fig_gen.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
         st.plotly_chart(fig_gen, use_container_width=True)
 
