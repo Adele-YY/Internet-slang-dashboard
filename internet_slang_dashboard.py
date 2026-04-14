@@ -308,7 +308,7 @@ with col_chan:
 with col_scene:
     st.markdown("#### Usage Scenarios")
     if not f_df.empty:
-        scene_data, scene_others = process_multi_choice_with_details(f_df['Using Scene'], SCENE_MAP)
+        scene_data, scene_others = process_multi_choice_with_percentages(f_df['Using Scene'], SCENE_MAP)
         # 饼图中包含 Others 扇区
         fig_scene = px.pie(scene_data, values='Count', names='Item', hole=0.5,
                            color_discrete_sequence=px.colors.qualitative.Safe, template='plotly_white', height=400)
