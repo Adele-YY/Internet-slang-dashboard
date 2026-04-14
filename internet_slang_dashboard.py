@@ -293,7 +293,7 @@ with col_chan:
                           color_discrete_sequence=px.colors.qualitative.Pastel, template='plotly_white', height=400)
         st.plotly_chart(fig_chan, use_container_width=True)
         
-        with st.expander("Explore User-defined 'Other' Channels"):
+        with st.expander("Explore 'Other' Channels"):
             if chan_others: st.write(", ".join(chan_others))
             else: st.write("No specific details provided for 'Others'.")
 
@@ -306,6 +306,6 @@ with col_scene:
                            color_discrete_sequence=px.colors.qualitative.Safe, template='plotly_white', height=400)
         st.plotly_chart(fig_scene, use_container_width=True)
         
-        with st.expander("Explore User-defined 'Other' Scenarios"):
+        with st.expander("Explore 'Other' Scenarios"):
             if scene_others: st.write(", ".join(scene_others))
             else: st.write("No specific details provided for 'Others'.")
