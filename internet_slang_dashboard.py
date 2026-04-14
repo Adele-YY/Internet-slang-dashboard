@@ -110,7 +110,7 @@ def load_and_fully_clean_data(file_path):
 
     return df
 
-def process_multi_choice_with_details(series, translation_map):
+def process_multi_choice_with_percentages(series, translation_map):
     all_translated = []
     raw_others = []
     for val in series.dropna():
@@ -124,8 +124,16 @@ def process_multi_choice_with_details(series, translation_map):
                 if name not in ['其他', 'Others', '']:
                     raw_others.append(name)
     
+    # Calculate Counts
     counts = pd.Series(all_translated).value_counts().reset_index()
     counts.columns = ['Item', 'Count']
+    
+    # Calculate Percentage
+    total = counts['Count'].sum()
+    counts['Percentage'] = (counts['Count'] / total * 100).round(1)
+    # Create a label string for the chart: "Count (Percentage%)"
+    counts['Label'] = counts.apply(lambda x: f"{x['Count']} ({x['Percentage']}%)", axis=1)
+    
     return counts, list(set(raw_others))
     
 # 定义翻译字典 (放在主程序全局位置)
