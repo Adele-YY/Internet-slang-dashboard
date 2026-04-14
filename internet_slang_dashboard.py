@@ -357,23 +357,14 @@ if not f_df.empty:
     st.plotly_chart(fig_impact, use_container_width=True)
 
 # --- Footer ---
-st.markdown("---") # 添加一条分割线
+st.write("") # 增加一点留白
+st.write("")
+st.markdown("---") # 分割线
+
+# 使用居中的 Markdown 替代固定定位的 HTML
 st.markdown(
     """
-    <style>
-    .footer {
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        background-color: transparent;
-        color: #A0A0A0; /* 莫兰迪灰色 */
-        text-align: center;
-        font-size: 14px;
-        padding: 10px;
-    }
-    </style>
-    <div class="footer">
+    <div style="text-align: center; color: #A0A0A0; font-size: 14px; padding: 20px 0;">
         Made by Adele.
     </div>
     """,
