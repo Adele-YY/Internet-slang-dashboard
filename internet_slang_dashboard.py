@@ -294,7 +294,7 @@ col_chan, col_scene = st.columns(2)
 with col_chan:
     st.markdown("#### Top Acquisition Channels")
     if not f_df.empty:
-        chan_data, chan_others = process_multi_choice_with_details(f_df['Acquisition Channel'], CHANNEL_MAP)
+        chan_data, chan_others = process_multi_choice_with_percentages(f_df['Acquisition Channel'], CHANNEL_MAP)
         # 直接显示包含 Others 的完整统计图
         fig_chan = px.bar(chan_data.sort_values('Count', ascending=True), 
                           x='Count', y='Item', orientation='h', color='Item',
