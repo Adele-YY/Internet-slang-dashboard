@@ -94,7 +94,7 @@ def load_and_fully_clean_data(file_path):
     if 'Influence' in df.columns:
         df['Influence'] = df['Influence'].replace(impact_map)
     if 'UM Student' in df.columns:
-        df['UM Student'] = df['UM Student'].replace({'是': 'UM Student', '否': 'Non-UM Student'})
+        df['UM Student'] = df['UM Student'].replace({'是': 'UM Student', '否': 'Non-UM (General Public)'})
 
     # 5. Scoring Conversion
     cleanup_map = {'经常刷/听到': 2, '有印象': 1, '没听过': 0, '经常会用': 2, '有时会用': 1, '从来不用': 0}
@@ -226,7 +226,7 @@ with pie_col2:
         um_counts = f_df['UM Student'].value_counts().reset_index()
         um_counts.columns = ['Status', 'Count']
         fig_um = px.pie(um_counts, values='Count', names='Status', hole=0.5,
-                        title="Student Status", color_discrete_sequence=px.colors.qualitative.Set3)
+                        title="Identity", color_discrete_sequence=px.colors.qualitative.Set3)
         fig_um.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
         st.plotly_chart(fig_um, use_container_width=True)
 
@@ -355,3 +355,27 @@ if not f_df.empty:
     fig_impact.update_traces(textinfo='percent+label', pull=[0.05, 0, 0])
     fig_impact.update_layout(margin=dict(t=30, b=30, l=30, r=30))
     st.plotly_chart(fig_impact, use_container_width=True)
+
+# --- Footer ---
+st.markdown("---") # 添加一条分割线
+st.markdown(
+    """
+    <style>
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: transparent;
+        color: #A0A0A0; /* 莫兰迪灰色 */
+        text-align: center;
+        font-size: 14px;
+        padding: 10px;
+    }
+    </style>
+    <div class="footer">
+        Made by Adele.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
