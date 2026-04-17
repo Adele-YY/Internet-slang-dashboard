@@ -230,7 +230,18 @@ with pie_col2:
         fig_um.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
         st.plotly_chart(fig_um, use_container_width=True)
 
-# 2. Short Video Frequency Analysis
+# 2. Geographic Distribution
+st.divider()
+st.subheader("📍 Geographic Distribution")
+map_data = f_df.dropna(subset=['lat'])
+if not map_data.empty:
+    fig_map = px.scatter_mapbox(map_data, lat="lat", lon="lon", color="Gender", hover_name="Location Name",
+                                zoom=3, height=450, mapbox_style="open-street-map")
+    st.plotly_chart(fig_map, use_container_width=True)
+
+st.markdown("⚠️ **Note:** Locations are approximated based on IP data and do not represent precise physical addresses.")
+
+# 3. Short Video Frequency Analysis
 st.divider()
 st.subheader("📱 Short Video Usage & Slang Proficiency")
 col_freq1, col_freq2 = st.columns(2)
@@ -255,17 +266,6 @@ if not f_df.empty:
         st.plotly_chart(fig_freq_trend, use_container_width=True)
 
 st.markdown("💡 **Insight:** Users who watch short videos **Frequently** generally exhibit higher awareness and usage scores.")
-
-# 3. Geographic Distribution
-st.divider()
-st.subheader("📍 Geographic Distribution")
-map_data = f_df.dropna(subset=['lat'])
-if not map_data.empty:
-    fig_map = px.scatter_mapbox(map_data, lat="lat", lon="lon", color="Gender", hover_name="Location Name",
-                                zoom=3, height=450, mapbox_style="open-street-map")
-    st.plotly_chart(fig_map, use_container_width=True)
-
-st.markdown("⚠️ **Note:** Locations are approximated based on IP data and do not represent precise physical addresses.")
 
 # 4. Age vs Total Score
 st.divider()
