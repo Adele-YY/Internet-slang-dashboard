@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.io as pio
 
 # 1. Page Configuration
 st.set_page_config(page_title="🌐 Internet Slang Dashboard", layout="wide")
@@ -41,6 +42,17 @@ SLANG_CONTENT = [
     "心理委员我不得劲儿",
     "我不行了"
 ]
+
+# ====================== 全局 Plotly 高清下载配置 ======================
+HIGH_RES_CONFIG = {
+    "toImageButtonOptions": {
+        "format": "png",
+        "height": 1000,
+        "width": 1600,
+        "scale": 3   # 3倍高清，论文级清晰度
+    }
+}
+# =====================================================================
 
 @st.cache_data
 def load_and_fully_clean_data(file_path):
@@ -219,6 +231,7 @@ with pie_col1:
         fig_gen = px.pie(gender_counts, values='Count', names='Gender', hole=0.5,
                          title="Gender", color_discrete_sequence=px.colors.qualitative.Pastel)
         fig_gen.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
+        fig_gen.config.update(HIGH_RES_CONFIG)
         st.plotly_chart(fig_gen, use_container_width=True)
 
 with pie_col2:
@@ -228,6 +241,7 @@ with pie_col2:
         fig_um = px.pie(um_counts, values='Count', names='Status', hole=0.5,
                         title="Identity", color_discrete_sequence=px.colors.qualitative.Set3)
         fig_um.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=False)
+        fig_um.config.update(HIGH_RES_CONFIG)
         st.plotly_chart(fig_um, use_container_width=True)
 
 # 2. Geographic Distribution
@@ -237,6 +251,7 @@ map_data = f_df.dropna(subset=['lat'])
 if not map_data.empty:
     fig_map = px.scatter_mapbox(map_data, lat="lat", lon="lon", color="Gender", hover_name="Location Name",
                                 zoom=3, height=450, mapbox_style="open-street-map")
+    fig_map.config.update(HIGH_RES_CONFIG)
     st.plotly_chart(fig_map, use_container_width=True)
 
 st.markdown("⚠️ **Note:** Locations are approximated based on IP data and do not represent precise physical addresses.")
@@ -255,6 +270,7 @@ if not f_df.empty:
         
         fig_freq_dist = px.bar(freq_counts, x='Frequency', y='Count', color='Frequency',
                                color_discrete_sequence=px.colors.sequential.Viridis, text='Count')
+        fig_freq_dist.config.update(HIGH_RES_CONFIG)
         st.plotly_chart(fig_freq_dist, use_container_width=True)
 
     with col_freq2:
@@ -263,6 +279,7 @@ if not f_df.empty:
         fig_freq_trend = px.line(freq_score, x='Frequency', y='Total Score', markers=True,
                                  labels={'Total Score': 'Avg Total Score'})
         fig_freq_trend.update_traces(line_color='#636EFA', fill='tozeroy') 
+        fig_freq_trend.config.update(HIGH_RES_CONFIG)
         st.plotly_chart(fig_freq_trend, use_container_width=True)
 
 st.markdown("💡 **Insight:** Users who watch short videos **Frequently** generally exhibit higher awareness and usage scores.")
@@ -294,7 +311,7 @@ if not f_df.empty:
         yaxis_title="Total Score",
         height=500
     )
-    
+    fig_age_score.config.update(HIGH_RES_CONFIG)
     st.plotly_chart(fig_age_score, use_container_width=True)
     
     # 动态 Insight
@@ -315,6 +332,7 @@ if not f_df.empty:
     fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score",
                           color="Slang", text="Slang", height=500)
     fig_comp.update_traces(textposition='top center')
+    fig_comp.config.update(HIGH_RES_CONFIG)
     st.plotly_chart(fig_comp, use_container_width=True)
 
 # 6. Bar Comparison Analysis
@@ -329,6 +347,7 @@ if not f_df.empty:
     fig_bar_comp = px.bar(pd.DataFrame(bar_data_list), x="Slang", y="Score", color="Type",
                           barmode="group", height=500, color_discrete_map={"Awareness": "#8ECAE6", "Usage": "#BDB2FF"}, template='plotly_white')
     fig_bar_comp.update_layout(xaxis_tickangle=-45)
+    fig_bar_comp.config.update(HIGH_RES_CONFIG)
     st.plotly_chart(fig_bar_comp, use_container_width=True)
 
 # 7. Individual Analysis
@@ -362,7 +381,7 @@ if not f_df.empty:
         legend_title_text='',
         height=450
     )
-    
+    fig_ind.config.update(HIGH_RES_CONFIG)
     st.plotly_chart(fig_ind, use_container_width=True)
 
 # 8. Acquisition & Scenarios
@@ -378,6 +397,7 @@ with col_chan:
         fig_chan = px.bar(chan_data.sort_values('Count', ascending=True), 
                           x='Count', y='Item', orientation='h', color='Item',
                           color_discrete_sequence=px.colors.qualitative.Pastel, template='plotly_white', height=400)
+        fig_chan.config.update(HIGH_RES_CONFIG)
         st.plotly_chart(fig_chan, use_container_width=True)
         
         with st.expander("Explore 'Other' Channels"):
@@ -391,6 +411,7 @@ with col_scene:
         # 饼图中包含 Others 扇区
         fig_scene = px.pie(scene_data, values='Count', names='Item', hole=0.5,
                            color_discrete_sequence=px.colors.qualitative.Safe, template='plotly_white', height=400)
+        fig_scene.config.update(HIGH_RES_CONFIG)
         st.plotly_chart(fig_scene, use_container_width=True)
         
         with st.expander("Explore 'Other' Scenarios"):
@@ -411,6 +432,7 @@ if not f_df.empty:
     )
     fig_impact.update_traces(textinfo='percent+label', pull=[0.05, 0, 0])
     fig_impact.update_layout(margin=dict(t=30, b=30, l=30, r=30))
+    fig_impact.config.update(HIGH_RES_CONFIG)
     st.plotly_chart(fig_impact, use_container_width=True)
 
 # --- Footer ---
