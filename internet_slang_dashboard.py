@@ -196,7 +196,7 @@ st.divider()
 kpi_col, pie_col1, pie_col2 = st.columns([2, 1, 1])
 
 with kpi_col:
-    st.markdown("#### 📈 Key Metrics (Double Balanced)")
+    st.markdown("#### 📈 Key Metrics")
     m1, m2 = st.columns(2)
     w_awareness = calculate_double_weighted_mean(f_df, 'Hearing Score')
     w_usage = calculate_double_weighted_mean(f_df, 'Using Score')
