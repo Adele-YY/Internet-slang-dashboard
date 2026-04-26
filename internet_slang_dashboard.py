@@ -244,8 +244,13 @@ if not f_df.empty:
         freq_counts = f_df['Frequency'].value_counts().reset_index()
         freq_counts.columns = ['Frequency', 'Count']
         freq_counts = freq_counts.sort_values('Frequency')
+        # 改动：添加 text 标签
         fig_freq_dist = px.bar(freq_counts, x='Frequency', y='Count', color='Frequency',
                                color_discrete_sequence=px.colors.sequential.Viridis, text='Count')
+        # 改动：外侧显示并留白
+        fig_freq_dist.update_traces(textposition='outside', cliponaxis=False)
+        fig_freq_dist.update_layout(yaxis=dict(range=[0, freq_counts['Count'].max() * 1.15]), showlegend=False)
+        st.plotly_chart(fig_freq_dist, use_container_width=True, config=CHART_CONFIG)
         st.plotly_chart(fig_freq_dist, use_container_width=True, config=CHART_CONFIG)
 
     with col_freq2:
@@ -257,8 +262,9 @@ if not f_df.empty:
             w_score = calculate_double_weighted_mean(group, 'Total Score')
             freq_score_list.append({'Frequency': name, 'Total Score': w_score})
         freq_score = pd.DataFrame(freq_score_list)
-        fig_freq_trend = px.line(freq_score, x='Frequency', y='Total Score', markers=True)
-        fig_freq_trend.update_traces(line_color='#636EFA', fill='tozeroy') 
+        # 折线图保持现状或添加 text
+        fig_freq_trend = px.line(freq_score, x='Frequency', y='Total Score', markers=True, text=freq_score['Total Score'].round(2))
+        fig_freq_trend.update_traces(line_color='#636EFA', fill='tozeroy', textposition='top center') 
         st.plotly_chart(fig_freq_trend, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
@@ -300,11 +306,15 @@ if not f_df.empty:
         bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": w_aw, "Type": "Awareness"})
         bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": w_us, "Type": "Usage"})
     
-    fig_bar_comp = px.bar(pd.DataFrame(bar_data_list), x="Slang", y="Score", color="Type",
+    # 改动：添加 text 标签
+    fig_bar_comp = px.bar(comp_df, x="Slang", y="Score", color="Type",
                           barmode="group", height=500, 
+                          text='Score',
                           color_discrete_map={"Awareness": "#8ECAE6", "Usage": "#BDB2FF"}, 
                           template='plotly_white')
-    fig_bar_comp.update_layout(xaxis_tickangle=-45)
+    # 改动：外侧显示 + 格式化 + 留白
+    fig_bar_comp.update_traces(textposition='outside', texttemplate='%{text:.2f}', cliponaxis=False)
+    fig_bar_comp.update_layout(yaxis=dict(range=[0, comp_df['Score'].max() * 1.3]), xaxis_tickangle=-45)
     st.plotly_chart(fig_bar_comp, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
@@ -314,9 +324,14 @@ if not f_df.empty:
     item_avg = f_df.groupby('Gender', observed=True)[[f"Score_Aw_{slang_idx}", f"Score_Us_{slang_idx}"]].mean().reset_index()
     item_avg.columns = ['Gender', 'Awareness', 'Usage']
     item_avg_melted = item_avg.melt(id_vars='Gender', var_name='Type', value_name='Score')
+    # 改动：添加 text 标签
     fig_ind = px.bar(item_avg_melted, x='Gender', y='Score', color='Type', barmode='group',
                      title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}",
+                     text='Score',
                      color_discrete_map={"Awareness": "#B5C0D0", "Usage": "#CCD3CA"}, template='plotly_white')
+    # 改动：外侧显示 + 留白
+    fig_ind.update_traces(textposition='outside', texttemplate='%{text:.2f}', cliponaxis=False)
+    fig_ind.update_layout(yaxis=dict(range=[0, item_avg_melted['Score'].max() * 1.3]))
     st.plotly_chart(fig_ind, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
@@ -326,11 +341,14 @@ col_chan, col_scene = st.columns(2)
 with col_chan:
     st.markdown("#### Top Acquisition Channels")
     if not f_df.empty:
-        # 修改点 1: 正确接收 chan_others
         chan_data, chan_others = process_multi_choice_with_percentages(f_df['Acquisition Channel'], CHANNEL_MAP)
+        # 改动：水平柱状图添加 text 标签（显示标签内容）
         fig_chan = px.bar(chan_data.sort_values('Count', ascending=True), 
                           x='Count', y='Item', orientation='h', color='Item',
+                          text='Label',
                           color_discrete_sequence=px.colors.qualitative.Pastel, height=400)
+        fig_chan.update_traces(textposition='outside', cliponaxis=False)
+        fig_chan.update_layout(xaxis=dict(range=[0, chan_data['Count'].max() * 1.3]))
         st.plotly_chart(fig_chan, use_container_width=True, config=CHART_CONFIG)
         with st.expander("Explore 'Other' Channels"):
             if chan_others: st.write(", ".join(chan_others))
@@ -339,11 +357,9 @@ with col_chan:
 with col_scene:
     st.markdown("#### Usage Scenarios")
     if not f_df.empty:
-        # 修改点 2: 正确接收 scene_others
         scene_data, scene_others = process_multi_choice_with_percentages(f_df['Using Scene'], SCENE_MAP)
         fig_scene = px.pie(scene_data, values='Count', names='Item', hole=0.5,
                            color_discrete_sequence=px.colors.qualitative.Safe, height=400)
-        # 修改点 3: 优化布局防止大小不一
         fig_scene.update_layout(margin=dict(t=30, b=30, l=10, r=10))
         st.plotly_chart(fig_scene, use_container_width=True, config=CHART_CONFIG)
         with st.expander("Explore 'Other' Scenarios"):
