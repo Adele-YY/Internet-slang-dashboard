@@ -310,10 +310,12 @@ if not f_df.empty:
 st.divider()
 st.subheader("📡 Acquisition Channels & Usage Scenarios")
 col_chan, col_scene = st.columns(2)
+
 with col_chan:
     st.markdown("#### Top Acquisition Channels")
     if not f_df.empty:
-        chan_data, _ = process_multi_choice_with_percentages(f_df['Acquisition Channel'], CHANNEL_MAP)
+        # 修改点 1: 正确接收 chan_others
+        chan_data, chan_others = process_multi_choice_with_percentages(f_df['Acquisition Channel'], CHANNEL_MAP)
         fig_chan = px.bar(chan_data.sort_values('Count', ascending=True), 
                           x='Count', y='Item', orientation='h', color='Item',
                           color_discrete_sequence=px.colors.qualitative.Pastel, height=400)
@@ -325,9 +327,12 @@ with col_chan:
 with col_scene:
     st.markdown("#### Usage Scenarios")
     if not f_df.empty:
-        scene_data, _ = process_multi_choice_with_percentages(f_df['Using Scene'], SCENE_MAP)
+        # 修改点 2: 正确接收 scene_others
+        scene_data, scene_others = process_multi_choice_with_percentages(f_df['Using Scene'], SCENE_MAP)
         fig_scene = px.pie(scene_data, values='Count', names='Item', hole=0.5,
                            color_discrete_sequence=px.colors.qualitative.Safe, height=400)
+        # 修改点 3: 优化布局防止大小不一
+        fig_scene.update_layout(margin=dict(t=30, b=30, l=10, r=10))
         st.plotly_chart(fig_scene, use_container_width=True, config=CHART_CONFIG)
         with st.expander("Explore 'Other' Scenarios"):
             if scene_others: st.write(", ".join(scene_others))
