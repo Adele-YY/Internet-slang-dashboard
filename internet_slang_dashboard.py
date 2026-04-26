@@ -5,15 +5,14 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
-# --- 新增：高清下载配置 ---
-# scale=3 配合 1280x720 的基础尺寸，可以导出约 3840x2160 的 4K 分辨率图片
+# --- 高清下载配置 ---
 CHART_CONFIG = {
     'toImageButtonOptions': {
-        'format': 'png', # 导出的格式
-        'filename': 'slang_dashboard_export', # 导出的文件名
+        'format': 'png', 
+        'filename': 'slang_dashboard_export', 
         'height': 720,
         'width': 1280,
-        'scale': 3 # 关键参数：放大倍数，数值越大分辨率越高
+        'scale': 3 
     }
 }
 
@@ -129,30 +128,20 @@ def load_and_fully_clean_data(file_path):
     return df
 
 def calculate_double_weighted_mean(df, target_col):
-    """
-    双重加权平均：
-    1. 先对每个 年龄段 内的 性别 进行均一化
-    2. 再对所有 年龄段 进行均一化
-    """
-    if df.empty:
-        return 0
-    
-    # 按照年龄和性别同时分组计算平均值
-    # results 结构类似: Age, Gender, Mean_Score
+    """双重加权平均：先按年龄组内性别平衡，再按年龄段平衡"""
+    if df.empty: return 0
     group_means = df.groupby(['Age', 'Gender'], observed=True)[target_col].mean().reset_index()
-    
-    if group_means.empty:
-        return 0
-    
-    # 第一步：在每个年龄组内部，平衡性别差异
+    if group_means.empty: return 0
     age_balanced = group_means.groupby('Age', observed=True)[target_col].mean().reset_index()
-    
-    # 第二步：在所有年龄组之间，平衡样本量差异
-    # 这样无论哪个年龄段人多，最终贡献都是 1/年龄段数量
-    final_weighted_mean = age_balanced[target_col].mean()
-    
-    return final_weighted_mean
-        
+    return age_balanced[target_col].mean()
+
+def calculate_gender_weighted_only(df, target_col):
+    """单层加权：平衡性别差异（用于特定分组内部）"""
+    if df.empty: return 0
+    gender_means = df.groupby('Gender', observed=True)[target_col].mean()
+    if gender_means.empty: return 0
+    return gender_means.mean()
+
 def process_multi_choice_with_percentages(series, translation_map):
     all_translated = []
     raw_others = []
@@ -181,7 +170,7 @@ CHANNEL_MAP = {
 SCENE_MAP = {
     '线下闲聊': 'Offline Chatting', '线上私聊（微信、QQ等）': 'Online Private Chat',
     '社交媒体互动（发帖、评论、转发等）': 'Social Media Interaction', '工作沟通': 'Formal Work/Study',
-    '游戏交流': 'Gaming Chat', '特殊场合（体育赛事、演唱会等）': 'Gaming Chat', '其他': 'Others'
+    '游戏交流': 'Gaming Chat', '特殊场合（体育赛事、演唱会等）': 'Special Occasions', '其他': 'Others'
 }
 
 # --- Data Loading ---
@@ -207,18 +196,16 @@ st.divider()
 kpi_col, pie_col1, pie_col2 = st.columns([2, 1, 1])
 
 with kpi_col:
-    st.markdown("#### 📈 Key Metrics (Gender & Age Balanced)")
+    st.markdown("#### 📈 Key Metrics (Double Balanced)")
     m1, m2 = st.columns(2)
-    
-    # 应用双重加权计算全局指标
     w_awareness = calculate_double_weighted_mean(f_df, 'Hearing Score')
     w_usage = calculate_double_weighted_mean(f_df, 'Using Score')
     w_total = calculate_double_weighted_mean(f_df, 'Total Score')
     
-    m1.metric("Double Weighted Awareness", round(w_awareness, 2))
-    m2.metric("Double Weighted Usage", round(w_usage, 2))
+    m1.metric("Weighted Awareness", round(w_awareness, 2))
+    m2.metric("Weighted Usage", round(w_usage, 2))
     m3, m4 = st.columns(2)
-    m3.metric("Global Balanced Total", round(w_total, 2))
+    m3.metric("Balanced Total Score", round(w_total, 2))
     m4.metric("Total Raw Samples", len(f_df))
 
 with pie_col1:
@@ -226,18 +213,18 @@ with pie_col1:
         gender_counts = f_df['Gender'].value_counts().reset_index()
         gender_counts.columns = ['Gender', 'Count']
         fig_gen = px.pie(gender_counts, values='Count', names='Gender', hole=0.5,
-                         title="Gender", color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig_gen.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=True)
-        st.plotly_chart(fig_gen, use_container_width=True, config=CHART_CONFIG) # 加入高清配置
+                         title="Gender Distribution", color_discrete_sequence=px.colors.qualitative.Pastel)
+        fig_gen.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0))
+        st.plotly_chart(fig_gen, use_container_width=True, config=CHART_CONFIG)
 
 with pie_col2:
-    if not f_df.empty and 'UM Student' in f_df.columns:
+    if not f_df.empty:
         um_counts = f_df['UM Student'].value_counts().reset_index()
         um_counts.columns = ['Status', 'Count']
         fig_um = px.pie(um_counts, values='Count', names='Status', hole=0.5,
-                        title="Identity", color_discrete_sequence=px.colors.qualitative.Set3)
-        fig_um.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0), showlegend=True)
-        st.plotly_chart(fig_um, use_container_width=True, config=CHART_CONFIG) # 加入高清配置
+                        title="Identity Status", color_discrete_sequence=px.colors.qualitative.Set3)
+        fig_um.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0))
+        st.plotly_chart(fig_um, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
 st.subheader("📍 Geographic Distribution")
@@ -245,7 +232,7 @@ map_data = f_df.dropna(subset=['lat'])
 if not map_data.empty:
     fig_map = px.scatter_mapbox(map_data, lat="lat", lon="lon", color="Gender", hover_name="Location Name",
                                 zoom=3, height=450, mapbox_style="open-street-map")
-    st.plotly_chart(fig_map, use_container_width=True, config=CHART_CONFIG) # 加入高清配置
+    st.plotly_chart(fig_map, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
 st.subheader("📱 Short Video Usage & Slang Proficiency")
@@ -262,66 +249,42 @@ if not f_df.empty:
         st.plotly_chart(fig_freq_dist, use_container_width=True, config=CHART_CONFIG)
 
     with col_freq2:
-        st.markdown("#### Weighted Avg Total Score by Frequency")
-        # 按照频率分组，并在组内进行性别加权
+        st.markdown("#### Balanced Total Score by Frequency")
         freq_groups = f_df.groupby('Frequency', observed=True)
         freq_score_list = []
         for name, group in freq_groups:
-            w_score = calculate_weighted_mean(group, 'Total Score')
+            # 频率组内平衡性别和年龄
+            w_score = calculate_double_weighted_mean(group, 'Total Score')
             freq_score_list.append({'Frequency': name, 'Total Score': w_score})
-        
         freq_score = pd.DataFrame(freq_score_list)
-        fig_freq_trend = px.line(freq_score, x='Frequency', y='Total Score', markers=True,
-                                 labels={'Total Score': 'Weighted Avg Score'})
+        fig_freq_trend = px.line(freq_score, x='Frequency', y='Total Score', markers=True)
         fig_freq_trend.update_traces(line_color='#636EFA', fill='tozeroy') 
         st.plotly_chart(fig_freq_trend, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
-st.subheader("🎂 Age Group vs Slang Proficiency (Weighted)")
+st.subheader("🎂 Age Group vs Slang Proficiency (Gender Balanced)")
 if not f_df.empty:
-    # 这里是你们研究的核心：不同年龄段的差异
     age_groups = f_df.groupby('Age', observed=True)
     age_weighted_list = []
     for name, group in age_groups:
-        w_score = calculate_weighted_mean(group, 'Total Score')
+        # 对比年龄组时，在该组内平衡性别
+        w_score = calculate_gender_weighted_only(group, 'Total Score')
         age_weighted_list.append({'Age': name, 'Weighted Total Score': w_score})
-    
     age_weighted_df = pd.DataFrame(age_weighted_list)
-    
-    # 保持原有的箱线图展示分布，但增加一个加权平均值的柱状图或点
-    fig_age_score = px.bar(
-        age_weighted_df, x='Age', y='Weighted Total Score', color='Age',
-        category_orders={"Age": ["Under 18", "18-30", "Over 30"]},
-        color_discrete_sequence=px.colors.qualitative.Pastel
-    )
+    fig_age_score = px.bar(age_weighted_df, x='Age', y='Weighted Total Score', color='Age',
+                           category_orders={"Age": ["Under 18", "18-30", "Over 30"]},
+                           color_discrete_sequence=px.colors.qualitative.Pastel)
     fig_age_score.update_layout(showlegend=False, height=500)
     st.plotly_chart(fig_age_score, use_container_width=True, config=CHART_CONFIG)
-    
-st.divider()
-st.subheader("📱 Short Video Usage vs Proficiency (Balanced)")
-if not f_df.empty:
-    col_freq1, col_freq2 = st.columns(2)
-    
-    with col_freq2:
-        st.markdown("#### Weighted Avg Total Score by Frequency")
-        # 在每个频率分组内，也要进行性别+年龄的均一化
-        freq_groups = f_df.groupby('Frequency', observed=True)
-        freq_score_list = []
-        for name, group in freq_groups:
-            w_score = calculate_double_weighted_mean(group, 'Total Score')
-            freq_score_list.append({'Frequency': name, 'Total Score': w_score})
-        
-        freq_score = pd.DataFrame(freq_score_list)
-        fig_freq_trend = px.line(freq_score, x='Frequency', y='Total Score', markers=True)
-        st.plotly_chart(fig_freq_trend, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
 st.subheader("📊 Comparative Analysis: Weighted Score by Slang Item")
 if not f_df.empty:
     bar_data_list = []
     for i in range(len(SLANG_CONTENT)):
-        w_aw = calculate_weighted_mean(f_df, f"Score_Aw_{i}")
-        w_us = calculate_weighted_mean(f_df, f"Score_Us_{i}")
+        # 每个具体梗的得分应用双重加权
+        w_aw = calculate_double_weighted_mean(f_df, f"Score_Aw_{i}")
+        w_us = calculate_double_weighted_mean(f_df, f"Score_Us_{i}")
         bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": w_aw, "Type": "Awareness"})
         bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": w_us, "Type": "Usage"})
     
@@ -332,8 +295,6 @@ if not f_df.empty:
     fig_bar_comp.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_bar_comp, use_container_width=True, config=CHART_CONFIG)
 
-# 后面的“部分，由于是分性别展示或计数统计，受性别分布不均影响较小，可以保持原样。
-
 st.divider()
 st.subheader("🔎 Individual Slang Item Analysis")
 slang_idx = st.selectbox("Select Slang to Inspect:", range(len(SLANG_CONTENT)), format_func=lambda x: SLANG_CONTENT[x])
@@ -341,11 +302,9 @@ if not f_df.empty:
     item_avg = f_df.groupby('Gender', observed=True)[[f"Score_Aw_{slang_idx}", f"Score_Us_{slang_idx}"]].mean().reset_index()
     item_avg.columns = ['Gender', 'Awareness', 'Usage']
     item_avg_melted = item_avg.melt(id_vars='Gender', var_name='Type', value_name='Score')
-    fig_ind = px.bar(
-        item_avg_melted, x='Gender', y='Score', color='Type', barmode='group',
-        title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}",
-        color_discrete_map={"Awareness": "#B5C0D0", "Usage": "#CCD3CA"}, template='plotly_white'
-    )
+    fig_ind = px.bar(item_avg_melted, x='Gender', y='Score', color='Type', barmode='group',
+                     title=f"Detailed Comparison: {SLANG_CONTENT[slang_idx]}",
+                     color_discrete_map={"Awareness": "#B5C0D0", "Usage": "#CCD3CA"}, template='plotly_white')
     st.plotly_chart(fig_ind, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
@@ -354,7 +313,7 @@ col_chan, col_scene = st.columns(2)
 with col_chan:
     st.markdown("#### Top Acquisition Channels")
     if not f_df.empty:
-        chan_data, chan_others = process_multi_choice_with_percentages(f_df['Acquisition Channel'], CHANNEL_MAP)
+        chan_data, _ = process_multi_choice_with_percentages(f_df['Acquisition Channel'], CHANNEL_MAP)
         fig_chan = px.bar(chan_data.sort_values('Count', ascending=True), 
                           x='Count', y='Item', orientation='h', color='Item',
                           color_discrete_sequence=px.colors.qualitative.Pastel, height=400)
@@ -363,7 +322,7 @@ with col_chan:
 with col_scene:
     st.markdown("#### Usage Scenarios")
     if not f_df.empty:
-        scene_data, scene_others = process_multi_choice_with_percentages(f_df['Using Scene'], SCENE_MAP)
+        scene_data, _ = process_multi_choice_with_percentages(f_df['Using Scene'], SCENE_MAP)
         fig_scene = px.pie(scene_data, values='Count', names='Item', hole=0.5,
                            color_discrete_sequence=px.colors.qualitative.Safe, height=400)
         st.plotly_chart(fig_scene, use_container_width=True, config=CHART_CONFIG)
