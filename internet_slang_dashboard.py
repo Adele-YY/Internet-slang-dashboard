@@ -128,15 +128,13 @@ def load_and_fully_clean_data(file_path):
     return df
 
 def calculate_double_weighted_mean(df, target_col):
-    """双重加权平均：先按年龄组内性别平衡，再按年龄段平衡"""
     if df.empty: return 0
     group_means = df.groupby(['Age', 'Gender'], observed=True)[target_col].mean().reset_index()
     if group_means.empty: return 0
     age_balanced = group_means.groupby('Age', observed=True)[target_col].mean().reset_index()
     return age_balanced[target_col].mean()
-    
+
 def calculate_gender_weighted_only(df, target_col):
-    """单层加权：平衡性别差异（用于特定分组内部）"""
     if df.empty: return 0
     gender_means = df.groupby('Gender', observed=True)[target_col].mean()
     if gender_means.empty: return 0
@@ -251,14 +249,12 @@ if not f_df.empty:
         fig_freq_dist.update_traces(textposition='outside', cliponaxis=False)
         fig_freq_dist.update_layout(yaxis=dict(range=[0, freq_counts['Count'].max() * 1.15]), showlegend=False)
         st.plotly_chart(fig_freq_dist, use_container_width=True, config=CHART_CONFIG)
-        st.plotly_chart(fig_freq_dist, use_container_width=True, config=CHART_CONFIG)
 
     with col_freq2:
         st.markdown("#### Balanced Total Score by Frequency")
         freq_groups = f_df.groupby('Frequency', observed=True)
         freq_score_list = []
         for name, group in freq_groups:
-            # 频率组内平衡性别和年龄
             w_score = calculate_double_weighted_mean(group, 'Total Score')
             freq_score_list.append({'Frequency': name, 'Total Score': w_score})
         freq_score = pd.DataFrame(freq_score_list)
@@ -273,26 +269,17 @@ if not f_df.empty:
     age_groups = f_df.groupby('Age', observed=True)
     age_weighted_list = []
     for name, group in age_groups:
-        # 对比年龄组时，在该组内平衡性别
         w_score = calculate_gender_weighted_only(group, 'Total Score')
         age_weighted_list.append({'Age': name, 'Weighted Total Score': w_score})
     age_weighted_df = pd.DataFrame(age_weighted_list)
+    # 改动：添加 text 标签
     fig_age_score = px.bar(age_weighted_df, x='Age', y='Weighted Total Score', color='Age',
                            category_orders={"Age": ["Under 18", "18-30", "Over 30"]},
                            color_discrete_sequence=px.colors.qualitative.Pastel,
                            text='Weighted Total Score')
-    
-    # 核心配置：两位小数格式化 + 防止裁剪
-    fig_age_score.update_traces(
-        textposition='outside', 
-        texttemplate='%{text:.2f}', 
-        cliponaxis=False
-    )
-    fig_age_score.update_layout(
-        yaxis=dict(range=[0, age_weighted_df['Weighted Total Score'].max() * 1.2]), # 留白
-        showlegend=False, 
-        height=500
-    )
+    # 改动：外侧显示 + 格式化 + 留白
+    fig_age_score.update_traces(textposition='outside', texttemplate='%{text:.2f}', cliponaxis=False)
+    fig_age_score.update_layout(yaxis=dict(range=[0, age_weighted_df['Weighted Total Score'].max() * 1.2]), showlegend=False, height=500)
     st.plotly_chart(fig_age_score, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
@@ -300,12 +287,12 @@ st.subheader("📊 Comparative Analysis: Weighted Score by Slang Item")
 if not f_df.empty:
     bar_data_list = []
     for i in range(len(SLANG_CONTENT)):
-        # 每个具体梗的得分应用双重加权
         w_aw = calculate_double_weighted_mean(f_df, f"Score_Aw_{i}")
         w_us = calculate_double_weighted_mean(f_df, f"Score_Us_{i}")
         bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": w_aw, "Type": "Awareness"})
         bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": w_us, "Type": "Usage"})
     
+    comp_df = pd.DataFrame(bar_data_list)
     # 改动：添加 text 标签
     fig_bar_comp = px.bar(comp_df, x="Slang", y="Score", color="Type",
                           barmode="group", height=500, 
