@@ -128,22 +128,30 @@ def load_and_fully_clean_data(file_path):
     df['lon'] = [c[1] for c in coords]
     return df
 
-def calculate_weighted_mean(df, target_col):
+def calculate_double_weighted_mean(df, target_col):
     """
-    计算性别加权平均值：(男性平均值 + 女性平均值) / 2
-    如果某一性别完全缺失，则返回另一性别的平均值
+    双重加权平均：
+    1. 先对每个 年龄段 内的 性别 进行均一化
+    2. 再对所有 年龄段 进行均一化
     """
     if df.empty:
         return 0
     
-    gender_means = df.groupby('Gender')[target_col].mean()
+    # 按照年龄和性别同时分组计算平均值
+    # results 结构类似: Age, Gender, Mean_Score
+    group_means = df.groupby(['Age', 'Gender'], observed=True)[target_col].mean().reset_index()
     
-    if len(gender_means) == 2:
-        return gender_means.mean()
-    elif len(gender_means) == 1:
-        return gender_means.iloc[0]
-    else:
+    if group_means.empty:
         return 0
+    
+    # 第一步：在每个年龄组内部，平衡性别差异
+    age_balanced = group_means.groupby('Age', observed=True)[target_col].mean().reset_index()
+    
+    # 第二步：在所有年龄组之间，平衡样本量差异
+    # 这样无论哪个年龄段人多，最终贡献都是 1/年龄段数量
+    final_weighted_mean = age_balanced[target_col].mean()
+    
+    return final_weighted_mean
         
 def process_multi_choice_with_percentages(series, translation_map):
     all_translated = []
@@ -199,18 +207,19 @@ st.divider()
 kpi_col, pie_col1, pie_col2 = st.columns([2, 1, 1])
 
 with kpi_col:
-    st.markdown("#### 📈 Key Metrics (Weighted)")
+    st.markdown("#### 📈 Key Metrics (Gender & Age Balanced)")
     m1, m2 = st.columns(2)
-    # 使用加权平均数替换 .mean()
-    w_awareness = calculate_weighted_mean(f_df, 'Hearing Score')
-    w_usage = calculate_weighted_mean(f_df, 'Using Score')
-    w_total = calculate_weighted_mean(f_df, 'Total Score')
     
-    m1.metric("Weighted Avg Awareness", round(w_awareness, 2))
-    m2.metric("Weighted Avg Usage", round(w_usage, 2))
+    # 应用双重加权计算全局指标
+    w_awareness = calculate_double_weighted_mean(f_df, 'Hearing Score')
+    w_usage = calculate_double_weighted_mean(f_df, 'Using Score')
+    w_total = calculate_double_weighted_mean(f_df, 'Total Score')
+    
+    m1.metric("Double Weighted Awareness", round(w_awareness, 2))
+    m2.metric("Double Weighted Usage", round(w_usage, 2))
     m3, m4 = st.columns(2)
-    m3.metric("Weighted Avg Total", round(w_total, 2))
-    m4.metric("Total Samples", len(f_df))
+    m3.metric("Global Balanced Total", round(w_total, 2))
+    m4.metric("Total Raw Samples", len(f_df))
 
 with pie_col1:
     if not f_df.empty:
@@ -289,22 +298,22 @@ if not f_df.empty:
     st.plotly_chart(fig_age_score, use_container_width=True, config=CHART_CONFIG)
     
 st.divider()
-st.subheader("📊 Slang Landscape: Awareness & Usage (Weighted)")
+st.subheader("📱 Short Video Usage vs Proficiency (Balanced)")
 if not f_df.empty:
-    comp_list = []
-    for i in range(len(SLANG_CONTENT)):
-        # 对每一个具体的梗计算加权平均
-        w_aw = calculate_weighted_mean(f_df, f"Score_Aw_{i}")
-        w_us = calculate_weighted_mean(f_df, f"Score_Us_{i}")
-        comp_list.append({
-            "Slang": SLANG_CONTENT[i],
-            "Awareness Score": w_aw,
-            "Usage Score": w_us
-        })
-    fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score",
-                          color="Slang", text="Slang", height=500)
-    fig_comp.update_traces(textposition='top center')
-    st.plotly_chart(fig_comp, use_container_width=True, config=CHART_CONFIG)
+    col_freq1, col_freq2 = st.columns(2)
+    
+    with col_freq2:
+        st.markdown("#### Weighted Avg Total Score by Frequency")
+        # 在每个频率分组内，也要进行性别+年龄的均一化
+        freq_groups = f_df.groupby('Frequency', observed=True)
+        freq_score_list = []
+        for name, group in freq_groups:
+            w_score = calculate_double_weighted_mean(group, 'Total Score')
+            freq_score_list.append({'Frequency': name, 'Total Score': w_score})
+        
+        freq_score = pd.DataFrame(freq_score_list)
+        fig_freq_trend = px.line(freq_score, x='Frequency', y='Total Score', markers=True)
+        st.plotly_chart(fig_freq_trend, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
 st.subheader("📊 Comparative Analysis: Weighted Score by Slang Item")
