@@ -128,6 +128,23 @@ def load_and_fully_clean_data(file_path):
     df['lon'] = [c[1] for c in coords]
     return df
 
+def calculate_weighted_mean(df, target_col):
+    """
+    计算性别加权平均值：(男性平均值 + 女性平均值) / 2
+    如果某一性别完全缺失，则返回另一性别的平均值
+    """
+    if df.empty:
+        return 0
+    
+    gender_means = df.groupby('Gender')[target_col].mean()
+    
+    if len(gender_means) == 2:
+        return gender_means.mean()
+    elif len(gender_means) == 1:
+        return gender_means.iloc[0]
+    else:
+        return 0
+        
 def process_multi_choice_with_percentages(series, translation_map):
     all_translated = []
     raw_others = []
@@ -182,13 +199,18 @@ st.divider()
 kpi_col, pie_col1, pie_col2 = st.columns([2, 1, 1])
 
 with kpi_col:
-    st.markdown("#### 📈 Key Metrics")
+    st.markdown("#### 📈 Key Metrics (Weighted)")
     m1, m2 = st.columns(2)
-    m1.metric("Avg Awareness", round(f_df['Hearing Score'].mean(), 2) if not f_df.empty else 0)
-    m2.metric("Avg Usage", round(f_df['Using Score'].mean(), 2) if not f_df.empty else 0)
+    # 使用加权平均数替换 .mean()
+    w_awareness = calculate_weighted_mean(f_df, 'Hearing Score')
+    w_usage = calculate_weighted_mean(f_df, 'Using Score')
+    w_total = calculate_weighted_mean(f_df, 'Total Score')
+    
+    m1.metric("Weighted Avg Awareness", round(w_awareness, 2))
+    m2.metric("Weighted Avg Usage", round(w_usage, 2))
     m3, m4 = st.columns(2)
-    m3.metric("Avg Total Score", round(f_df['Total Score'].mean(), 2) if not f_df.empty else 0)
-    m4.metric("Samples Count", len(f_df))
+    m3.metric("Weighted Avg Total", round(w_total, 2))
+    m4.metric("Total Samples", len(f_df))
 
 with pie_col1:
     if not f_df.empty:
@@ -231,34 +253,54 @@ if not f_df.empty:
         st.plotly_chart(fig_freq_dist, use_container_width=True, config=CHART_CONFIG)
 
     with col_freq2:
-        st.markdown("#### Average Total Score by Frequency")
-        freq_score = f_df.groupby('Frequency', observed=True)['Total Score'].mean().reset_index()
+        st.markdown("#### Weighted Avg Total Score by Frequency")
+        # 按照频率分组，并在组内进行性别加权
+        freq_groups = f_df.groupby('Frequency', observed=True)
+        freq_score_list = []
+        for name, group in freq_groups:
+            w_score = calculate_weighted_mean(group, 'Total Score')
+            freq_score_list.append({'Frequency': name, 'Total Score': w_score})
+        
+        freq_score = pd.DataFrame(freq_score_list)
         fig_freq_trend = px.line(freq_score, x='Frequency', y='Total Score', markers=True,
-                                 labels={'Total Score': 'Avg Total Score'})
+                                 labels={'Total Score': 'Weighted Avg Score'})
         fig_freq_trend.update_traces(line_color='#636EFA', fill='tozeroy') 
         st.plotly_chart(fig_freq_trend, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
-st.subheader("🎂 Age Group vs Slang Proficiency")
+st.subheader("🎂 Age Group vs Slang Proficiency (Weighted)")
 if not f_df.empty:
-    age_avg = f_df.groupby('Age', observed=True)['Total Score'].mean().reset_index()
-    fig_age_score = px.box(
-        f_df, x='Age', y='Total Score', color='Age', points="all",
+    # 这里是你们研究的核心：不同年龄段的差异
+    age_groups = f_df.groupby('Age', observed=True)
+    age_weighted_list = []
+    for name, group in age_groups:
+        w_score = calculate_weighted_mean(group, 'Total Score')
+        age_weighted_list.append({'Age': name, 'Weighted Total Score': w_score})
+    
+    age_weighted_df = pd.DataFrame(age_weighted_list)
+    
+    # 保持原有的箱线图展示分布，但增加一个加权平均值的柱状图或点
+    fig_age_score = px.bar(
+        age_weighted_df, x='Age', y='Weighted Total Score', color='Age',
         category_orders={"Age": ["Under 18", "18-30", "Over 30"]},
-        color_discrete_sequence=px.colors.qualitative.Pastel, template='plotly_white'
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        title="Gender-Weighted Average Score by Age Group"
     )
     fig_age_score.update_layout(showlegend=False, height=500)
-    st.plotly_chart(fig_age_score, use_container_width=True, config=CHART_CONFIG) # 加入高清配置
+    st.plotly_chart(fig_age_score, use_container_width=True, config=CHART_CONFIG)
     
 st.divider()
-st.subheader("📊 Slang Landscape: Awareness & Usage")
+st.subheader("📊 Slang Landscape: Awareness & Usage (Weighted)")
 if not f_df.empty:
     comp_list = []
     for i in range(len(SLANG_CONTENT)):
+        # 对每一个具体的梗计算加权平均
+        w_aw = calculate_weighted_mean(f_df, f"Score_Aw_{i}")
+        w_us = calculate_weighted_mean(f_df, f"Score_Us_{i}")
         comp_list.append({
             "Slang": SLANG_CONTENT[i],
-            "Awareness Score": f_df[f"Score_Aw_{i}"].mean(),
-            "Usage Score": f_df[f"Score_Us_{i}"].mean()
+            "Awareness Score": w_aw,
+            "Usage Score": w_us
         })
     fig_comp = px.scatter(pd.DataFrame(comp_list), x="Awareness Score", y="Usage Score",
                           color="Slang", text="Slang", height=500)
@@ -266,16 +308,23 @@ if not f_df.empty:
     st.plotly_chart(fig_comp, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
-st.subheader("📊 Comparative Analysis: Awareness & Usage by Slang Item")
+st.subheader("📊 Comparative Analysis: Weighted Score by Slang Item")
 if not f_df.empty:
     bar_data_list = []
     for i in range(len(SLANG_CONTENT)):
-        bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": f_df[f"Score_Aw_{i}"].mean(), "Type": "Awareness"})
-        bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": f_df[f"Score_Us_{i}"].mean(), "Type": "Usage"})
+        w_aw = calculate_weighted_mean(f_df, f"Score_Aw_{i}")
+        w_us = calculate_weighted_mean(f_df, f"Score_Us_{i}")
+        bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": w_aw, "Type": "Awareness"})
+        bar_data_list.append({"Slang": SLANG_CONTENT[i], "Score": w_us, "Type": "Usage"})
+    
     fig_bar_comp = px.bar(pd.DataFrame(bar_data_list), x="Slang", y="Score", color="Type",
-                          barmode="group", height=500, color_discrete_map={"Awareness": "#8ECAE6", "Usage": "#BDB2FF"}, template='plotly_white')
+                          barmode="group", height=500, 
+                          color_discrete_map={"Awareness": "#8ECAE6", "Usage": "#BDB2FF"}, 
+                          template='plotly_white')
     fig_bar_comp.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_bar_comp, use_container_width=True, config=CHART_CONFIG)
+
+# 后面的“部分，由于是分性别展示或计数统计，受性别分布不均影响较小，可以保持原样。
 
 st.divider()
 st.subheader("🔎 Individual Slang Item Analysis")
