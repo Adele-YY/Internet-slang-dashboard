@@ -318,6 +318,9 @@ with col_chan:
                           x='Count', y='Item', orientation='h', color='Item',
                           color_discrete_sequence=px.colors.qualitative.Pastel, height=400)
         st.plotly_chart(fig_chan, use_container_width=True, config=CHART_CONFIG)
+        with st.expander("Explore 'Other' Channels"):
+            if chan_others: st.write(", ".join(chan_others))
+            else: st.write("No specific details provided for 'Others'.")
 
 with col_scene:
     st.markdown("#### Usage Scenarios")
@@ -326,6 +329,9 @@ with col_scene:
         fig_scene = px.pie(scene_data, values='Count', names='Item', hole=0.5,
                            color_discrete_sequence=px.colors.qualitative.Safe, height=400)
         st.plotly_chart(fig_scene, use_container_width=True, config=CHART_CONFIG)
+        with st.expander("Explore 'Other' Scenarios"):
+            if scene_others: st.write(", ".join(scene_others))
+            else: st.write("No specific details provided for 'Others'.")
 
 st.divider()
 st.subheader("🧠 Perceived Impact on Daily Communication")
