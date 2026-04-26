@@ -90,7 +90,7 @@ def load_and_fully_clean_data(file_path):
         df['Frequency'] = df['Frequency'].replace(freq_map)
         df['Frequency'] = pd.Categorical(df['Frequency'], categories=['Almost Never', 'Sometimes', 'Frequently'], ordered=True)
 
-    impact_map = {'有积极影响': 'Positive Impact', '有负面影响': 'Negative Impact', '基本无影响': 'No Significant Impact'}
+    impact_map = {'有积极影响': 'Positive Impact', '有负面影响': 'Negative Impact', '无影响': 'No Significant Impact'}
     if 'Influence' in df.columns:
         df['Influence'] = df['Influence'].replace(impact_map)
     if 'UM Student' in df.columns:
