@@ -135,6 +135,19 @@ def calculate_double_weighted_mean(df, target_col):
     age_balanced = group_means.groupby('Age', observed=True)[target_col].mean().reset_index()
     return age_balanced[target_col].mean()
 
+def enhance_bar_labels(fig, data_series, is_score=True):
+    """一键增强柱状图标签：显示在顶部、不裁剪、留白"""
+    # 1. 强制在柱子外侧显示，如果是分数则保留两位小数
+    if is_score:
+        fig.update_traces(textposition='outside', texttemplate='%{text:.2f}', cliponaxis=False)
+    else:
+        fig.update_traces(textposition='outside', cliponaxis=False)
+    
+    # 2. 自动计算 Y 轴上限，留出 20% 的空间给数字
+    y_max = data_series.max()
+    fig.update_layout(yaxis=dict(range=[0, y_max * 1.2]))
+    return fig
+    
 def calculate_gender_weighted_only(df, target_col):
     """单层加权：平衡性别差异（用于特定分组内部）"""
     if df.empty: return 0
