@@ -134,19 +134,6 @@ def calculate_double_weighted_mean(df, target_col):
     if group_means.empty: return 0
     age_balanced = group_means.groupby('Age', observed=True)[target_col].mean().reset_index()
     return age_balanced[target_col].mean()
-
-def enhance_bar_labels(fig, data_series, is_score=True):
-    """一键增强柱状图标签：显示在顶部、不裁剪、留白"""
-    # 1. 强制在柱子外侧显示，如果是分数则保留两位小数
-    if is_score:
-        fig.update_traces(textposition='outside', texttemplate='%{text:.2f}', cliponaxis=False)
-    else:
-        fig.update_traces(textposition='outside', cliponaxis=False)
-    
-    # 2. 自动计算 Y 轴上限，留出 20% 的空间给数字
-    y_max = data_series.max()
-    fig.update_layout(yaxis=dict(range=[0, y_max * 1.2]))
-    return fig
     
 def calculate_gender_weighted_only(df, target_col):
     """单层加权：平衡性别差异（用于特定分组内部）"""
@@ -286,8 +273,20 @@ if not f_df.empty:
     age_weighted_df = pd.DataFrame(age_weighted_list)
     fig_age_score = px.bar(age_weighted_df, x='Age', y='Weighted Total Score', color='Age',
                            category_orders={"Age": ["Under 18", "18-30", "Over 30"]},
-                           color_discrete_sequence=px.colors.qualitative.Pastel)
-    fig_age_score.update_layout(showlegend=False, height=500)
+                           color_discrete_sequence=px.colors.qualitative.Pastel,
+                           text='Weighted Total Score')
+    
+    # 核心配置：两位小数格式化 + 防止裁剪
+    fig_age_score.update_traces(
+        textposition='outside', 
+        texttemplate='%{text:.2f}', 
+        cliponaxis=False
+    )
+    fig_age_score.update_layout(
+        yaxis=dict(range=[0, age_weighted_df['Weighted Total Score'].max() * 1.2]), # 留白
+        showlegend=False, 
+        height=500
+    )
     st.plotly_chart(fig_age_score, use_container_width=True, config=CHART_CONFIG)
 
 st.divider()
