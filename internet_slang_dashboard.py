@@ -196,7 +196,7 @@ st.divider()
 kpi_col, pie_col1, pie_col2 = st.columns([2, 1, 1])
 
 with kpi_col:
-    st.markdown("#### 📈 Key Metrics")
+    st.markdown("#### 📈 Key Metrics (Double Balanced)")
     m1, m2 = st.columns(2)
     w_awareness = calculate_double_weighted_mean(f_df, 'Hearing Score')
     w_usage = calculate_double_weighted_mean(f_df, 'Using Score')
@@ -213,7 +213,7 @@ with pie_col1:
         gender_counts = f_df['Gender'].value_counts().reset_index()
         gender_counts.columns = ['Gender', 'Count']
         fig_gen = px.pie(gender_counts, values='Count', names='Gender', hole=0.5,
-                         title="Gender", color_discrete_sequence=px.colors.qualitative.Pastel)
+                         title="Gender Distribution", color_discrete_sequence=px.colors.qualitative.Pastel)
         fig_gen.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0))
         st.plotly_chart(fig_gen, use_container_width=True, config=CHART_CONFIG)
 
@@ -222,7 +222,7 @@ with pie_col2:
         um_counts = f_df['UM Student'].value_counts().reset_index()
         um_counts.columns = ['Status', 'Count']
         fig_um = px.pie(um_counts, values='Count', names='Status', hole=0.5,
-                        title="Identity", color_discrete_sequence=px.colors.qualitative.Set3)
+                        title="Identity Status", color_discrete_sequence=px.colors.qualitative.Set3)
         fig_um.update_layout(height=250, margin=dict(t=40, b=0, l=0, r=0))
         st.plotly_chart(fig_um, use_container_width=True, config=CHART_CONFIG)
 
