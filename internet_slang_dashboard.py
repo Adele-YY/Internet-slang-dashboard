@@ -283,8 +283,7 @@ if not f_df.empty:
     fig_age_score = px.bar(
         age_weighted_df, x='Age', y='Weighted Total Score', color='Age',
         category_orders={"Age": ["Under 18", "18-30", "Over 30"]},
-        color_discrete_sequence=px.colors.qualitative.Pastel,
-        title="Gender-Weighted Average Score by Age Group"
+        color_discrete_sequence=px.colors.qualitative.Pastel
     )
     fig_age_score.update_layout(showlegend=False, height=500)
     st.plotly_chart(fig_age_score, use_container_width=True, config=CHART_CONFIG)
